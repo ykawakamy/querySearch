@@ -6,6 +6,10 @@
   "engines": {
     "vscode": "^1.75.0"
   },
+  "publisher": "yuyakawakamy",
+  "repository": {
+    "url": "https://github.com/ykawakamy/querySearch"
+  },
   "categories": [
     "Other"
   ],
@@ -28,7 +32,8 @@
     },
     "commands": [
       {
-        "command": "querySearch.openFile"
+        "command": "querySearch.openFile",
+        "title": "open file"
       },
       {
         "command": "querySearch.replace",

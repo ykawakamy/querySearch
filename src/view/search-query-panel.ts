@@ -117,7 +117,7 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
 			<body>
         <textarea id="query-expr" rows="1"></textarea>
 				<button id="do-search">Search</button>
-        <textarea id="replace-expr" rows="3" placeholder="experimental: ex) $.insertAdjacentHTML('afterend', $.removeChild($.querySelector("div")).outerHTML); $"></textarea>
+        <textarea id="replace-expr" rows="3" placeholder="experimental: ex) $.insertAdjacentHTML('afterend', $.removeChild($.querySelector('div')).outerHTML); $"></textarea>
 
 				<script nonce="${nonce}" src="${scriptUri}"></script>
 			</body>

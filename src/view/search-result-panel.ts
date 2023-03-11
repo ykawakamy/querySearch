@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import * as path from "path";
-import * as fs from "fs";
+import * as fs from "fs/promises";
 import { SerachResult, SerachResultItem } from "../model/search-result.model";
 import { Constants } from "../constants";
 import { posix } from "path";
@@ -68,7 +68,7 @@ export class SearchResultPanelProvider
 
   async refresh(document :vscode.TextDocument){
     const uri = document.uri;
-    if (!uri.path.endsWith(".html")) {
+    if (!this.isTargetFile(uri)) {
       return;
     }
 
@@ -76,12 +76,24 @@ export class SearchResultPanelProvider
     if( !this.queryExpr ){
       return;
     }
+    const index = this.result.findIndex(v=>v.resourceUri?.fsPath === uri.fsPath);
+    if(index === -1){
+      return;
+    }
+
     const r = await this.refreshResult(document, this.queryExpr, uri);
     if (r) {
-      this.result.splice(this.result.findIndex(v=>v.resourceUri?.fsPath === uri.fsPath), 1, r);
+      this.result.splice(index, 1, r);
+      this._onDidChangeTreeData.fire(undefined);
+    }else{
+      this.result.splice(index, 1);
       this._onDidChangeTreeData.fire(undefined);
     }
 
+  }
+
+  private isTargetFile(uri: vscode.Uri) {
+    return uri.path.endsWith(".html") || uri.path.endsWith(".htm");
   }
 
   getChildren(offset?: SerachResult | SerachResultItem): Thenable<any[]> {
@@ -106,23 +118,16 @@ export class SearchResultPanelProvider
       return;
     }
 
+    const workspaceFolder = (
+      vscode.workspace.workspaceFolders ?? []
+    ).filter((folder) => folder.uri.scheme === "file")[0].uri;
+    const gitIgnorePatterns = await this.getIgnorePattern(workspaceFolder);
+
     this.queryExpr = queryExpr;
     vscode.window.withProgress(
       { location: { viewId: Constants.VIEW_ID_SEARCHRESULT } },
       async (progress, token) => {
         progress.report({ increment: 0 });
-        const workspaceFolder = (
-          vscode.workspace.workspaceFolders ?? []
-        ).filter((folder) => folder.uri.scheme === "file")[0].uri;
-        const gitIgnore = fs.readFileSync(
-          path.join(workspaceFolder.fsPath, ".gitignore"),
-          "utf-8"
-        );
-        const gitIgnorePatterns = gitIgnore
-          .split("\n")
-          .map((line) => line.trim())
-          .filter((line) => line !== "")
-          .map((line) => posix.join(workspaceFolder.path, line));
 
         this.clearResult();
         await search(this, workspaceFolder);
@@ -154,7 +159,7 @@ export class SearchResultPanelProvider
           self: SearchResultPanelProvider,
           uri: vscode.Uri
         ) {
-          if (!uri.path.endsWith(".html")) {
+          if (!self.isTargetFile(uri)) {
             return;
           }
           // const content$ = vscode.workspace.fs.readFile(uri);
@@ -167,6 +172,19 @@ export class SearchResultPanelProvider
         }
       }
     );
+  }
+
+  private async getIgnorePattern(workspaceFolder: vscode.Uri) {
+    const gitIgnore = fs.readFile(
+      path.join(workspaceFolder.fsPath, ".gitignore"),
+      "utf-8"
+    ).catch((v)=>"");
+    const gitIgnorePatterns = (await gitIgnore)
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line !== "")
+      .map((line) => posix.join(workspaceFolder.path, line));
+    return gitIgnorePatterns;
   }
 
   async refreshResult(
