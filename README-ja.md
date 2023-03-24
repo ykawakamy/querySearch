@@ -3,16 +3,10 @@
 
 ## 使い方
 ### 検索
-`QUERYPANEL`パネルにcssセレクタを入力し、`search`をクリックしてください。
-`SEARCH RESULT`に検索結果が一覧されます。  
+`QUERYPANEL`パネルに`CSSセレクタ`を入力し、`Search`をクリックしてください。
+`SEARCH RESULT`パネルに検索結果が一覧されます。  
 
-```
-  ex) "ul li"で下記の検索した場合、
-  <ul>
-    <li>first<li>
-    <li>second<li>
-  </ul>
-```
+![search](search.gif)
 
 ### 置換
 **この機能は実験的なものです。今後使用方法に変更があるかもしれません。**  
@@ -25,12 +19,14 @@ DOMの[Node](https://developer.mozilla.org/ja/docs/Web/API/Node)や
 
 #### ex) ul:has(li)で検索した下記のHTMLに対して、最初のliを抜き出し、/ulタグの後ろにつける。
 
+![replace](replace.gif)
 ```javascript:
 /*
   input:
     <ul>
-      <li>first<li>
-      <li>second<li>
+      <li>first</li>
+      <li>second</li>
+      <li>third</li>
     </ul>
 */
 var s = $.querySelector("li");
@@ -39,8 +35,9 @@ $.insertAdjacentHTML("afterend", s.outerHTML);
 /*
   result:
     <ul>
-      <li>second<li>
-    </ul><li>first<li>
+      <li>second</li>
+      <li>third</li>
+    </ul><li>first</li>
 */
 ```
 
