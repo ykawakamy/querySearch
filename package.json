@@ -36,15 +36,18 @@
       },
       {
         "command": "querySearch.replace",
-        "title": "Replace"
+        "title": "Replace",
+        "icon" : "$(search-replace)"
       },
       {
         "command": "querySearch.replaceAll",
-        "title": "Replace"
+        "title": "Replace",
+        "icon" : "$(search-replace-all)"
       },
       {
         "command": "querySearch.replaceFiles",
-        "title": "ReplaceFiles"
+        "title": "ReplaceFiles",
+        "icon" : "$(search-replace-all)"
       }
     ],
     "menus": {
@@ -63,7 +66,8 @@
       "view/title": [
         {
           "command": "querySearch.replaceFiles",
-          "when": "view == searchResult"
+          "when": "view == searchResult",
+          "group": "navigation"
         }
       ]
     }
