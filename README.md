@@ -43,7 +43,7 @@ $.insertAdjacentHTML("afterend", s.outerHTML);
 */
 ```
 
-#### ex. sappend/modify/remove Attributes
+#### ex. append/modify/remove attributes.
 ```javascript:
 /*
   selector: "ul:has(li) "
