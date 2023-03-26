@@ -1,14 +1,37 @@
 import * as assert from 'assert';
 
-// You can import and use all API from the 'vscode' module
-// as well as import your extension to test it
-import * as vscode from 'vscode';
-// import * as myExtension from '../../extension';
+import { after } from 'mocha';
 
-describe('Array', function () {
-	describe('#indexOf()', function () {
-	  it('should return -1 when the value is not present', function () {
-		assert.equal([1, 2, 3].indexOf(4), -1);
-	  });
-	});
+import * as vscode from 'vscode';
+import { SerachResult, SerachResultItem } from '../../model/search-result.model';
+import { SearchResultPanelProvider } from '../../view/search-result-panel';
+
+suite('Extension Test Suite', () => {
+  after(() => {
+    vscode.window.showInformationMessage('All tests done!');
   });
+
+	let extensionContext: vscode.ExtensionContext;
+	let testee: SearchResultPanelProvider;
+	
+	suiteSetup(async () => {
+			testee = new SearchResultPanelProvider();
+	});
+
+	test('replace', async () => {
+		const document = await vscode.workspace.openTextDocument({ content:"<ul><li>file</li></ul>" });
+		const queryExpr = "ul:has(li)";
+		const replaceExpr = `
+			var s = $.querySelector("li");
+			$.removeChild(s);
+			$.insertAdjacentHTML("afterend", s.outerHTML);
+		`;
+		const expected = "<ul></ul><li>file</li>";
+
+		const result = await testee.refreshResult(document, queryExpr);
+		testee.replace(result!.items[0], replaceExpr).then( ()=> {
+			assert.equal(document.getText(), expected);
+		});
+
+	});
+});

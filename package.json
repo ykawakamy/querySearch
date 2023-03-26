@@ -6,11 +6,14 @@
   "engines": {
     "vscode": "^1.75.0"
   },
+  "publisher": "yuyakawakamy",
+  "repository": {
+    "url": "https://github.com/ykawakamy/querySearch"
+  },
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-  ],
+  "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
     "views": {
@@ -28,11 +31,23 @@
     },
     "commands": [
       {
-        "command": "querySearch.openFile"
+        "command": "querySearch.openFile",
+        "title": "open file"
       },
       {
         "command": "querySearch.replace",
-        "title": "Replace"
+        "title": "Replace",
+        "icon" : "$(search-replace)"
+      },
+      {
+        "command": "querySearch.replaceAll",
+        "title": "Replace",
+        "icon" : "$(search-replace-all)"
+      },
+      {
+        "command": "querySearch.replaceFiles",
+        "title": "ReplaceFiles",
+        "icon" : "$(search-replace-all)"
       }
     ],
     "menus": {
@@ -41,6 +56,18 @@
           "command": "querySearch.replace",
           "when": "view == searchResult && viewItem == querySearch.result",
           "group": "inline"
+        },
+        {
+          "command": "querySearch.replaceAll",
+          "when": "view == searchResult && viewItem == querySearch.file",
+          "group": "inline"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "querySearch.replaceFiles",
+          "when": "view == searchResult",
+          "group": "navigation"
         }
       ]
     }

@@ -13,7 +13,7 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
 
   private _view?: vscode.WebviewView;
   private _extensionUri;
-  private _target? : SerachResultItem;
+  private _target?: SerachResultItem | SerachResult;
   constructor(
     private context: vscode.ExtensionContext,
     private resultPanel: SearchResultPanelProvider
@@ -22,7 +22,12 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
     context.subscriptions.push(
       vscode.window.registerWebviewViewProvider(
         SearchQueryPanelProvider.viewId,
-        this
+        this,
+        {
+          webviewOptions: {
+            retainContextWhenHidden: true,
+          },
+        }
       ),
       vscode.commands.registerCommand(
         Constants.COMMAND_QUERYSEARCH_OPENFILE,
@@ -33,8 +38,22 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
         (result: SerachResultItem) => {
           this._target = result;
           this._view?.webview
-            .postMessage({ type: "replace-expr" })
-            .then(() => {});
+            .postMessage({ type: "prepare-replace" });
+        }
+      ),
+      vscode.commands.registerCommand(
+        Constants.COMMAND_QUERYSEARCH_REPLACEALL,
+        (result: SerachResult) => {
+          this._target = result;
+          this._view?.webview
+            .postMessage({ type: "prepare-replace-all" });
+        }
+      ),
+      vscode.commands.registerCommand(
+        Constants.COMMAND_QUERYSEARCH_REPLACEFILES,
+        () => {
+          this._view?.webview
+            .postMessage({ type: "prepare-replace-files" });
         }
       )
     );
@@ -60,7 +79,6 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
     webviewView.webview.options = {
       // Allow scripts in the webview
       enableScripts: true,
-
       localResourceRoots: [this._extensionUri],
     };
 
@@ -71,14 +89,25 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
         case "do-search": {
           const queryExpr = data.queryExpr;
           console.log(queryExpr);
-          this.resultPanel.traverse(queryExpr);
+          this.resultPanel.searchWorkspace(queryExpr);
           break;
         }
         case "do-replace": {
-          if (this._target) {
+          if (this._target instanceof SerachResultItem) {
             this.resultPanel.replace(this._target, data.replaceExpr);
             this._target = undefined;
           }
+          break;
+        }
+        case "do-replace-all": {
+          if (this._target instanceof SerachResult) {
+            this.resultPanel.replaceAll(this._target, data.replaceExpr);
+            this._target = undefined;
+          }
+          break;
+        }
+        case "do-replace-files": {
+          this.resultPanel.replaceAllFiles(data.replaceExpr);
           break;
         }
       }
@@ -115,9 +144,9 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
 				<title>Search Query</title>
 			</head>
 			<body>
-        <textarea id="query-expr" rows="1">div</textarea>
+        <textarea id="query-expr" rows="1">${this.resultPanel.queryExpr}</textarea>
 				<button id="do-search">Search</button>
-        <textarea id="replace-expr" rows="3" placeholder="experimental: ex) $.insertAdjacentHTML('afterend', $.removeChild($.querySelector("div")).outerHTML); $">$.insertAdjacentHTML('afterend', $.removeChild($.querySelector("div")).outerHTML); $</textarea>
+        <textarea id="replace-expr" rows="3" placeholder="experimental: ex) $.insertAdjacentHTML('afterend', $.removeChild($.querySelector('div')).outerHTML); $">${this.resultPanel.replaceExpr}</textarea>
 
 				<script nonce="${nonce}" src="${scriptUri}"></script>
 			</body>

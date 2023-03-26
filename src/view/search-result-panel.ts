@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import * as path from "path";
-import * as fs from "fs";
+import * as fs from "fs/promises";
 import { SerachResult, SerachResultItem } from "../model/search-result.model";
 import { Constants } from "../constants";
 import { posix } from "path";
@@ -13,14 +13,58 @@ import minimatch from "minimatch";
 export class SearchResultPanelProvider
   implements vscode.TreeDataProvider<SerachResult>
 {
-  replaceExpr!: string;
-  queryExpr!: string;
+  _replaceExpr: string = "";
+  _queryExpr: string = "";
 
-  constructor(private context: vscode.ExtensionContext) {
+  get replaceExpr() {
+    return this._replaceExpr;
+  }
+
+  set replaceExpr(replaceExpr) {
+    this._replaceExpr = replaceExpr;
+    this._context?.workspaceState.update(
+      Constants.STATE.LATEST_REPLACE_EXPRESSION,
+      replaceExpr
+    );
+  }
+
+  get queryExpr() {
+    return this._queryExpr;
+  }
+
+  set queryExpr(queryExpr) {
+    this._queryExpr = queryExpr;
+    this._context?.workspaceState.update(
+      Constants.STATE.LATEST_QUERY,
+      queryExpr
+    );
+  }
+  private _context?: vscode.ExtensionContext;
+  private _result: SerachResult[] = [];
+
+  private _onDidChangeTreeData: vscode.EventEmitter<SerachResult | undefined> =
+    new vscode.EventEmitter<SerachResult | undefined>();
+  readonly onDidChangeTreeData: vscode.Event<SerachResult | undefined> =
+    this._onDidChangeTreeData.event;
+
+  constructor() {}
+
+  init(context: vscode.ExtensionContext) {
+    this._context = context;
+
     const view = vscode.window.createTreeView(Constants.VIEW_ID_SEARCHRESULT, {
       treeDataProvider: this,
       showCollapseAll: true,
     });
+
+    this.queryExpr = context.workspaceState.get(
+      Constants.STATE.LATEST_QUERY,
+      ""
+    );
+    this.replaceExpr = context.workspaceState.get(
+      Constants.STATE.LATEST_REPLACE_EXPRESSION,
+      ""
+    );
 
     context.subscriptions.push(view);
 
@@ -35,53 +79,55 @@ export class SearchResultPanelProvider
     this.replaceExpr = replaceExpr;
   }
   clearResult() {
-    this.result = [];
+    this._result = [];
     this._onDidChangeTreeData.fire(undefined);
   }
   addResult(r: SerachResult) {
-    this.result.push(r);
+    this._result.push(r);
     this._onDidChangeTreeData.fire(undefined);
   }
-  private _onDidChangeTreeData: vscode.EventEmitter<SerachResult | undefined> =
-    new vscode.EventEmitter<SerachResult | undefined>();
-  readonly onDidChangeTreeData: vscode.Event<SerachResult | undefined> =
-    this._onDidChangeTreeData.event;
-
-  private result: SerachResult[] = [];
-
-
 
   private onActiveEditorChanged(): void {
-		if (vscode.window.activeTextEditor) {
+    if (vscode.window.activeTextEditor) {
       this.refresh(vscode.window.activeTextEditor.document);
-		} else {
+    } else {
     }
-
   }
 
-  async onDocumentChanged(
-    changeEvent: vscode.TextDocumentChangeEvent
-  ) {
+  async onDocumentChanged(changeEvent: vscode.TextDocumentChangeEvent) {
     const document = changeEvent.document;
     this.refresh(document);
   }
 
-  async refresh(document :vscode.TextDocument){
+  async refresh(document: vscode.TextDocument) {
     const uri = document.uri;
-    if (!uri.path.endsWith(".html")) {
+    if (!this.isTargetFile(uri)) {
       return;
     }
 
     // when didn't searched
-    if( !this.queryExpr ){
+    if (!this.queryExpr) {
       return;
     }
-    const r = await this.refreshResult(document, this.queryExpr, uri);
-    if (r) {
-      this.result.splice(this.result.findIndex(v=>v.resourceUri?.fsPath === uri.fsPath), 1, r);
-      this._onDidChangeTreeData.fire(undefined);
+    const index = this._result.findIndex(
+      (v) => v.resourceUri?.fsPath === uri.fsPath
+    );
+    if (index === -1) {
+      return;
     }
 
+    const r = await this.refreshResult(document, this.queryExpr);
+    if (r) {
+      this._result.splice(index, 1, r);
+      this._onDidChangeTreeData.fire(undefined);
+    } else {
+      this._result.splice(index, 1);
+      this._onDidChangeTreeData.fire(undefined);
+    }
+  }
+
+  private isTargetFile(uri: vscode.Uri) {
+    return uri.path.endsWith(".html") || uri.path.endsWith(".htm");
   }
 
   getChildren(offset?: SerachResult | SerachResultItem): Thenable<any[]> {
@@ -89,40 +135,32 @@ export class SearchResultPanelProvider
       return Promise.resolve(offset.items);
     }
 
-    return Promise.resolve(this.result);
+    return Promise.resolve(this._result);
   }
 
   getTreeItem(offset: SerachResult): vscode.TreeItem {
     return offset;
   }
 
-  select(range: vscode.Range) {}
-
-  async traverse(queryExpr: string) {
-    try{
+  async searchWorkspace(queryExpr: string) {
+    try {
       const compiledQuery = CSSselect.compile(queryExpr);
-    }catch(e){
+    } catch (e) {
       vscode.window.showErrorMessage("invalid search expression.");
       return;
     }
 
+    const workspaceFolder = (vscode.workspace.workspaceFolders ?? []).filter(
+      (folder) => folder.uri.scheme === "file"
+    )[0].uri;
+    const gitIgnorePatterns = await this.getIgnorePattern(workspaceFolder);
+
     this.queryExpr = queryExpr;
+
     vscode.window.withProgress(
       { location: { viewId: Constants.VIEW_ID_SEARCHRESULT } },
       async (progress, token) => {
         progress.report({ increment: 0 });
-        const workspaceFolder = (
-          vscode.workspace.workspaceFolders ?? []
-        ).filter((folder) => folder.uri.scheme === "file")[0].uri;
-        const gitIgnore = fs.readFileSync(
-          path.join(workspaceFolder.fsPath, ".gitignore"),
-          "utf-8"
-        );
-        const gitIgnorePatterns = gitIgnore
-          .split("\n")
-          .map((line) => line.trim())
-          .filter((line) => line !== "")
-          .map((line) => posix.join(workspaceFolder.path, line));
 
         this.clearResult();
         await search(this, workspaceFolder);
@@ -154,13 +192,11 @@ export class SearchResultPanelProvider
           self: SearchResultPanelProvider,
           uri: vscode.Uri
         ) {
-          if (!uri.path.endsWith(".html")) {
+          if (!self.isTargetFile(uri)) {
             return;
           }
-          // const content$ = vscode.workspace.fs.readFile(uri);
-          // const content = new TextDecoder().decode(await content$);
           const content$ = await vscode.workspace.openTextDocument(uri);
-          const result = await self.refreshResult(content$, queryExpr, uri);
+          const result = await self.refreshResult(content$, queryExpr);
           if (result) {
             self.addResult(result);
           }
@@ -169,55 +205,114 @@ export class SearchResultPanelProvider
     );
   }
 
-  async refreshResult(
-    content$: vscode.TextDocument,
-    queryExpr: string,
-    uri: vscode.Uri
-  ) {
+  private async getIgnorePattern(workspaceFolder: vscode.Uri) {
+    const gitIgnore = fs
+      .readFile(path.join(workspaceFolder.fsPath, ".gitignore"), "utf-8")
+      .catch((v) => "");
+    const gitIgnorePatterns = (await gitIgnore)
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line !== "")
+      .map((line) => posix.join(workspaceFolder.path, line));
+    return gitIgnorePatterns;
+  }
+
+  async refreshResult(content$: vscode.TextDocument, queryExpr: string) {
     const content = content$.getText();
-    const doc = HTMLParser.parse(content);
+    const doc = HTMLParser.parse(content, {
+      comment: true,
+      voidTag: { closingSlash: false },
+    });
 
     const result = doc.querySelectorAll(queryExpr);
     if (result?.length > 0) {
-      const r = new SerachResult(
-        content$,
-        result
-      );
+      const r = new SerachResult(content$, result);
       return r;
     }
     return null;
   }
 
-  async replace(item: SerachResultItem, replaceExpr : string) {
-    const baseTag = item.tag;
-    const $ = baseTag.clone();
-    const context = { $: $ };
-    vm.createContext(context);
+  async replace(item: SerachResultItem, replaceExpr: string) {
+    this.replaceExpr = replaceExpr;
+    const edit = new vscode.WorkspaceEdit();
 
     try {
-      const result = vm.runInContext(replaceExpr, context, {
-        timeout: 1000,
-      });
       const uri = item.resourceUri!;
       const document = await vscode.workspace.openTextDocument(uri!);
-
-      const range = new vscode.Range(
-        document.positionAt(baseTag.range[0]),
-        document.positionAt(baseTag.range[1])
-      );
-
-      const edit = new vscode.WorkspaceEdit();
-      edit.replace(item.resourceUri!, range, $.parentNode.toString());
+      this._replace(item, document, replaceExpr, edit);
 
       await vscode.workspace.applyEdit(edit);
-      const r = await this.refreshResult(document, this.queryExpr, uri);
-      if (r) {
-        this.result.splice(this.result.indexOf(item.parent), 1, r);
-        this._onDidChangeTreeData.fire(undefined);
-      }
+      await this.refresh(document);
     } catch (e: any) {
-      vscode.window.showErrorMessage("failed to replace: \n"+ e.toString());
+      vscode.window.showErrorMessage("failed to replace: \n" + e?.toString());
       console.log(e, e.stack);
     }
+  }
+
+  async replaceAll(searchResult: SerachResult, replaceExpr: string) {
+    this.replaceExpr = replaceExpr;
+    const edit = new vscode.WorkspaceEdit();
+
+    try {
+      const uri = searchResult.resourceUri!;
+      const document = await vscode.workspace.openTextDocument(uri!);
+      for (const item of searchResult.items) {
+        this._replace(item, document, replaceExpr, edit);
+      }
+
+      await vscode.workspace.applyEdit(edit);
+      await this.refresh(document);
+    } catch (e: any) {
+      vscode.window.showErrorMessage("failed to replace: \n" + e?.toString());
+      console.log(e, e.stack);
+    }
+  }
+
+  async replaceAllFiles(replaceExpr: string) {
+    this.replaceExpr = replaceExpr;
+    const edit = new vscode.WorkspaceEdit();
+
+    try {
+      for (const searchResult of this._result) {
+        const uri = searchResult.resourceUri!;
+        const document = await vscode.workspace.openTextDocument(uri!);
+        for (const item of searchResult.items) {
+          this._replace(item, document, replaceExpr, edit);
+        }
+      }
+
+      await vscode.workspace.applyEdit(edit);
+
+      for (const searchResult of this._result) {
+        const uri = searchResult.resourceUri!;
+        const document = await vscode.workspace.openTextDocument(uri!);
+        await this.refresh(document);
+      }
+    } catch (e: any) {
+      vscode.window.showErrorMessage("failed to replace: \n" + e?.toString());
+      console.log(e, e.stack);
+    }
+  }
+
+  private _replace(
+    item: SerachResultItem,
+    document: vscode.TextDocument,
+    replaceExpr: string,
+    edit: vscode.WorkspaceEdit
+  ) {
+    const baseTag = item.tag;
+    const range = new vscode.Range(
+      document.positionAt(baseTag.range[0]),
+      document.positionAt(baseTag.range[1])
+    );
+
+    const $ = baseTag.clone();
+    const vmContext = { $: $ };
+    vm.createContext(vmContext);
+    const result = vm.runInContext(replaceExpr, vmContext, {
+      timeout: 1000,
+    });
+
+    edit.replace(document.uri, range, $.parentNode?.toString());
   }
 }

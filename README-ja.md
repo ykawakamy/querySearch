@@ -3,16 +3,10 @@
 
 ## 使い方
 ### 検索
-`QUERYPANEL`パネルにcssセレクタを入力し、`search`をクリックしてください。
-`SEARCH RESULT`に検索結果が一覧されます。  
+`QUERYPANEL`パネルに`CSSセレクタ`を入力し、`Search`をクリックしてください。
+`SEARCH RESULT`パネルに検索結果が一覧されます。  
 
-```
-  ex) "ul li"で下記の検索した場合、
-  <ul>
-    <li>first<li>
-    <li>second<li>
-  </ul>
-```
+![search](search.gif)
 
 ### 置換
 **この機能は実験的なものです。今後使用方法に変更があるかもしれません。**  
@@ -23,14 +17,17 @@ DOMの[Node](https://developer.mozilla.org/ja/docs/Web/API/Node)や
 [Element](https://developer.mozilla.org/ja/docs/Web/API/Element)
 のプロパティ、メソッドが一部利用可能です。  
 
-#### ex) ul:has(li)で検索した下記のHTMLに対して、最初のliを抜き出し、/ulタグの後ろにつける。
+#### ex. 最初のliを抜き出し、/ulタグの後ろにつける。
 
+![replace](replace.gif)
 ```javascript:
 /*
+  selector: "ul:has(li) "
   input:
     <ul>
-      <li>first<li>
-      <li>second<li>
+      <li>first</li>
+      <li>second</li>
+      <li>third</li>
     </ul>
 */
 var s = $.querySelector("li");
@@ -39,16 +36,35 @@ $.insertAdjacentHTML("afterend", s.outerHTML);
 /*
   result:
     <ul>
-      <li>second<li>
-    </ul><li>first<li>
+      <li>second</li>
+      <li>third</li>
+    </ul><li>first</li>
 */
 ```
 
-## TODO
-- [ ] 設定の追加
-  - [ ] 対象ファイルの拡張子、languageのフィルタ
-- [ ] 検索対象ファイルのinclude/exclude
-  - [x] .gitignoreの除外
-- [ ] 置換モードの改善
-  - [ ] 置換モード時のプレビュー
-  - [ ] 置換スクリプトエディタ
+#### ex. 属性の追加/変更/削除
+```javascript:
+/*
+  selector: "ul:has(li) "
+  input:
+		<ul removeAttr="REMOVE" modifyAttr="OLD_VALUE" notModifyAttr="NOT_MODIFIED">
+  		<li></li>
+		</ul>
+*/
+$.setAttribute("appendttr", "APPENDED");
+$.setAttribute("modifyAttr", "NEW_VALUE");
+$.removeAttribute("removeAttr");
+
+/*
+  result:
+		<ul modifyAttr="NEW_VALUE" notModifyAttr="NOT_MODIFIED" appendttr="APPENDED">
+		<li></li>
+		</ul>
+*/
+```
+
+####
+> 注意: 現バージョンでは、`$`の祖先となる要素を操作することはできません。(e.g. `$.parentNode`).    
+> これは`$`はDOMツリーの要素を直接示しているわけではなく、クローンであるためです。
+
+#### 

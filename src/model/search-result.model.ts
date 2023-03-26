@@ -6,7 +6,7 @@ import * as vm from "vm";
 import { Utils } from "vscode-uri";
 import { htmlUtil } from "../util/html-util";
 export class SerachResult extends vscode.TreeItem {
-  items: vscode.TreeItem[];
+  items: SerachResultItem[];
   constructor(document: vscode.TextDocument, items: HTMLParser.HTMLElement[]) {
     super(document.uri);
     this.resourceUri = document.uri;
@@ -17,6 +17,8 @@ export class SerachResult extends vscode.TreeItem {
       item.parent = this;
       return item;
     });
+
+    this.contextValue = Constants.CONTEXT_VALUE.FILE;
   }
 }
 
