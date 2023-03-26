@@ -31,6 +31,14 @@
         });
         break;
       }
+      case "prepare-replace-files": {
+        const queryExpr = document.querySelector("#replace-expr");
+        vscode.postMessage({
+          type: "do-replace-files",
+          replaceExpr: queryExpr.value,
+        });
+        break;
+      }
     }
   });
 })();

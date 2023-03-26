@@ -67,7 +67,7 @@ suite('Replace Script Test', () => {
 		assert.equal(document.getText(), expected);
 	});
 
-
+	// TODO self closing/empty tag become decomposite by parser. 
 	test.skip('remove and insert to AfterEnd, preserve closing/empty tag', async () => {
 		const document = await vscode.workspace.openTextDocument({ content:`
 		<ul>
@@ -116,20 +116,54 @@ suite('Replace Script Test', () => {
 		assert.equal(document.getText(), expected);
 	});
 
-	test('setAttribute', async () => {
+	test('modify attributes', async () => {
 		const document = await vscode.workspace.openTextDocument({ content:`
-		<ul>
+		<ul removeAttr="REMOVE" modifyAttr="OLD_VALUE" notModifyAttr="NOT_MODIFIED">
 		<li></li>
 		</ul>
 		` });
 		const queryExpr = "ul:has(li)";
 		const replaceExpr = `
-			$.setAttribute("addAttr", "new");
+			$.setAttribute("appendttr", "APPENDED");
+			$.setAttribute("modifyAttr", "NEW_VALUE");
+			$.removeAttribute("removeAttr");
 		`;
 		const expected = `
-		<ul addAttr="new">
+		<ul modifyAttr="NEW_VALUE" notModifyAttr="NOT_MODIFIED" appendttr="APPENDED">
 		<li></li>
 		</ul>
+		`;
+
+		const result = await testee.refreshResult(document, queryExpr);
+		await testee.replace(result!.items[0], replaceExpr);
+		assert.equal(document.getText(), expected);
+	});
+
+
+	test('preserve comment block', async () => {
+		const document = await vscode.workspace.openTextDocument({ content:`
+		<ul>
+		<!-- 
+		  first
+	  -->
+		<li><!-- second --></li>
+		<!-- third -->
+		</ul>
+		` });
+		const queryExpr = "ul:has(li)";
+		const replaceExpr = `
+		var s = $.querySelector("li");
+		$.removeChild(s);
+		$.insertAdjacentHTML("afterend", s.outerHTML);
+		`;
+		const expected = `
+		<ul>
+		<!-- 
+		  first
+	  -->
+		
+		<!-- third -->
+		</ul><li><!-- second --></li>
 		`;
 
 		const result = await testee.refreshResult(document, queryExpr);

@@ -5,8 +5,14 @@ All notable changes to the "querysearch" extension will be documented in this fi
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
-
+- [ ] add configuration.
+  - [ ] filtering file extensions and languageId.
+- [ ] including/excluding target files.
+  - [x] excluding `.gitignore` definition.
+- [ ] improve replace feature. 
+  - [ ] replace preview
+  - [ ] add replace script editor.
 
 ## [0.0.1] - 2023-03-11
 
-- Initial release
+- Initial commit

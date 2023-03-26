@@ -48,6 +48,13 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
           this._view?.webview
             .postMessage({ type: "prepare-replace-all" });
         }
+      ),
+      vscode.commands.registerCommand(
+        Constants.COMMAND_QUERYSEARCH_REPLACEFILES,
+        () => {
+          this._view?.webview
+            .postMessage({ type: "prepare-replace-files" });
+        }
       )
     );
   }
@@ -82,7 +89,7 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
         case "do-search": {
           const queryExpr = data.queryExpr;
           console.log(queryExpr);
-          this.resultPanel.traverse(queryExpr);
+          this.resultPanel.searchWorkspace(queryExpr);
           break;
         }
         case "do-replace": {
@@ -98,7 +105,10 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
             this._target = undefined;
           }
           break;
-
+        }
+        case "do-replace-files": {
+          this.resultPanel.replaceAllFiles(data.replaceExpr);
+          break;
         }
       }
     });
