@@ -7,16 +7,25 @@
 
   /** @type {Array<{ value: string }>} */
 
+  const $searchExpr = document.querySelector("#query-expr");
+  const $replaceExpr = document.querySelector("#replace-expr");
+
   document.querySelector("#do-search").addEventListener("click", () => {
-    const queryExpr = document.querySelector("#query-expr");
-    vscode.postMessage({ type: "do-search", queryExpr: queryExpr.value });
+    vscode.postMessage({ type: "do-search", queryExpr: $searchExpr.value });
   });
+  const updateReplaceExpr = () => {
+    console.log("hoge");
+    vscode.postMessage({ type: "change-replace", replaceExpr: $replaceExpr.value });
+  };
+  $replaceExpr.addEventListener("keyup", updateReplaceExpr);
+  $replaceExpr.addEventListener("change", updateReplaceExpr);
+  $replaceExpr.addEventListener("input", updateReplaceExpr);
 
   window.addEventListener("message", (event) => {
     const message = event.data;
     switch (message.type) {
       case "prepare-replace": {
-        const queryExpr = document.querySelector("#replace-expr");
+        const queryExpr = $replaceExpr;
         vscode.postMessage({
           type: "do-replace",
           replaceExpr: queryExpr.value,
@@ -24,7 +33,7 @@
         break;
       }
       case "prepare-replace-all": {
-        const queryExpr = document.querySelector("#replace-expr");
+        const queryExpr = $replaceExpr;
         vscode.postMessage({
           type: "do-replace-all",
           replaceExpr: queryExpr.value,
@@ -32,7 +41,7 @@
         break;
       }
       case "prepare-replace-files": {
-        const queryExpr = document.querySelector("#replace-expr");
+        const queryExpr = $replaceExpr;
         vscode.postMessage({
           type: "do-replace-files",
           replaceExpr: queryExpr.value,

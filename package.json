@@ -13,7 +13,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onFileSystem:querysearch"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "views": {
@@ -37,17 +39,21 @@
       {
         "command": "querySearch.replace",
         "title": "Replace",
-        "icon" : "$(search-replace)"
+        "icon": "$(search-replace)"
       },
       {
         "command": "querySearch.replaceAll",
         "title": "Replace",
-        "icon" : "$(search-replace-all)"
+        "icon": "$(search-replace-all)"
       },
       {
         "command": "querySearch.replaceFiles",
-        "title": "ReplaceFiles",
-        "icon" : "$(search-replace-all)"
+        "title": "Replace in Files",
+        "icon": "$(search-replace-all)"
+      },
+      {
+        "command": "querySearch.copyResult",
+        "title": "copy result"
       }
     ],
     "menus": {
@@ -61,6 +67,10 @@
           "command": "querySearch.replaceAll",
           "when": "view == searchResult && viewItem == querySearch.file",
           "group": "inline"
+        },
+        {
+          "command": "querySearch.copyResult",
+          "when": "view == searchResult"
         }
       ],
       "view/title": [
@@ -70,7 +80,13 @@
           "group": "navigation"
         }
       ]
-    }
+    },
+    "keybindings": [
+      {
+        "command": "querySearch.copyResult",
+        "key": "ctrl+c"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
@@ -84,7 +100,7 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "@types/glob": "^8.0.1",
+    "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
     "@types/vscode": "^1.75.0",
@@ -103,6 +119,7 @@
   "dependencies": {
     "minimatch": "^7.1.3",
     "node-html-parser": "^6.1.4",
+    "vscode-html-languageservice": "^5.0.5",
     "vscode-languageserver": "^8.1.0",
     "vscode-uri": "^3.0.7"
   }

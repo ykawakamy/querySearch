@@ -7,6 +7,7 @@ import { SearchResultPanelProvider } from "./search-result-panel";
 import { SerachResult, SerachResultItem } from "../model/search-result.model";
 import { Constants } from "../constants";
 import path = require("path");
+import { SearchContext } from "../engine/search-engine";
 
 export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
   public static readonly viewId = Constants.VIEW_ID_QUERY;
@@ -14,12 +15,26 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
   private _view?: vscode.WebviewView;
   private _extensionUri;
   private _target?: SerachResultItem | SerachResult;
+
+  queryExpr: string = "";
+  replaceExpr: string = "";
+
   constructor(
-    private context: vscode.ExtensionContext,
+    private _context: vscode.ExtensionContext,
     private resultPanel: SearchResultPanelProvider
   ) {
-    this._extensionUri = context.extensionUri;
-    context.subscriptions.push(
+    this._extensionUri = _context.extensionUri;
+
+    this.queryExpr = _context.workspaceState.get(
+      Constants.STATE.LATEST_QUERY,
+      ""
+    );
+    this.replaceExpr = _context.workspaceState.get(
+      Constants.STATE.LATEST_REPLACE_EXPRESSION,
+      ""
+    );
+
+    _context.subscriptions.push(
       vscode.window.registerWebviewViewProvider(
         SearchQueryPanelProvider.viewId,
         this,
@@ -31,41 +46,76 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
       ),
       vscode.commands.registerCommand(
         Constants.COMMAND_QUERYSEARCH_OPENFILE,
-        (resource, start, end) => this.openResource(resource, start, end)
+        (resource, start, end) => this.openReplacePreview(resource, start, end)
       ),
       vscode.commands.registerCommand(
         Constants.COMMAND_QUERYSEARCH_REPLACE,
         (result: SerachResultItem) => {
           this._target = result;
-          this._view?.webview
-            .postMessage({ type: "prepare-replace" });
+          this._view?.webview.postMessage({ type: "prepare-replace" });
         }
       ),
       vscode.commands.registerCommand(
         Constants.COMMAND_QUERYSEARCH_REPLACEALL,
         (result: SerachResult) => {
           this._target = result;
-          this._view?.webview
-            .postMessage({ type: "prepare-replace-all" });
+          this._view?.webview.postMessage({ type: "prepare-replace-all" });
         }
       ),
       vscode.commands.registerCommand(
         Constants.COMMAND_QUERYSEARCH_REPLACEFILES,
         () => {
-          this._view?.webview
-            .postMessage({ type: "prepare-replace-files" });
+          this._view?.webview.postMessage({ type: "prepare-replace-files" });
+        }
+      ),
+      vscode.commands.registerCommand(
+        Constants.COMMAND_QUERYSEARCH_COPY_RESULT,
+        async () => {
+          vscode.env.clipboard.writeText(
+            await this.resultPanel.getResultText()
+          );
         }
       )
     );
   }
 
-  openResource(resource: vscode.Uri, start: any, end: any): any {
+  openResource(resource: vscode.Uri, start: any, end: any) {
     vscode.workspace.openTextDocument(resource).then((document) => {
       const range = new vscode.Range(
         document.positionAt(start),
         document.positionAt(end)
       );
       vscode.window.showTextDocument(document, { selection: range });
+    });
+  }
+
+  openReplacePreview(resource: vscode.Uri, start: any, end: any) {
+    const preview = vscode.Uri.from({
+      scheme: Constants.SCHEMA_PREVIEW,
+      path: resource.path,
+      fragment: resource.scheme,
+      query: JSON.stringify({
+        search: this.queryExpr,
+        replace: this.replaceExpr,
+      }),
+    });
+    vscode.workspace.openTextDocument(resource).then((document) => {
+      const range = new vscode.Range(
+        document.positionAt(start),
+        document.positionAt(end)
+      );
+      const options: vscode.TextDocumentShowOptions = {
+        selection: range,
+        preserveFocus: true,
+        preview: false,
+      };
+      vscode.commands.executeCommand(
+        "vscode.diff",
+        resource,
+        preview,
+        `repalce preview`,
+        options
+      );
     });
   }
 
@@ -83,17 +133,20 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
     };
 
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
-
     webviewView.webview.onDidReceiveMessage((data: any) => {
       switch (data.type) {
         case "do-search": {
-          const queryExpr = data.queryExpr;
-          console.log(queryExpr);
-          this.resultPanel.searchWorkspace(queryExpr);
+          this.queryExpr = data.queryExpr;
+          this._context?.workspaceState.update(
+            Constants.STATE.LATEST_QUERY,
+            this.queryExpr
+          );
+          this.resultPanel.searchWorkspace({ search: this.queryExpr });
           break;
         }
         case "do-replace": {
           if (this._target instanceof SerachResultItem) {
+            this.replaceExpr = data.replaceExpr;
             this.resultPanel.replace(this._target, data.replaceExpr);
             this._target = undefined;
           }
@@ -101,13 +154,23 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
         }
         case "do-replace-all": {
           if (this._target instanceof SerachResult) {
+            this.replaceExpr = data.replaceExpr;
             this.resultPanel.replaceAll(this._target, data.replaceExpr);
             this._target = undefined;
           }
           break;
         }
         case "do-replace-files": {
+          this.replaceExpr = data.replaceExpr;
           this.resultPanel.replaceAllFiles(data.replaceExpr);
+          break;
+        }
+        case "change-replace": {
+          this.replaceExpr = data.replaceExpr;
+          this._context?.workspaceState.update(
+            Constants.STATE.LATEST_REPLACE_EXPRESSION,
+            this.replaceExpr
+          );
           break;
         }
       }
@@ -144,9 +207,11 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
 				<title>Search Query</title>
 			</head>
 			<body>
-        <textarea id="query-expr" rows="1">${this.resultPanel.queryExpr}</textarea>
+        <textarea id="query-expr" rows="1">${this.queryExpr}</textarea>
 				<button id="do-search">Search</button>
-        <textarea id="replace-expr" rows="3" placeholder="experimental: ex) $.insertAdjacentHTML('afterend', $.removeChild($.querySelector('div')).outerHTML); $">${this.resultPanel.replaceExpr}</textarea>
+        <textarea id="replace-expr" rows="3" 
+          placeholder="experimental: ex) $.insertAdjacentHTML('afterend', $.removeChild($.querySelector('div')).outerHTML); $"
+          >${this.replaceExpr}</textarea>
 
 				<script nonce="${nonce}" src="${scriptUri}"></script>
 			</body>

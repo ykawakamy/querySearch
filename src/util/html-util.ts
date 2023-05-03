@@ -1,4 +1,5 @@
 import * as HTMLParser from "node-html-parser";
+import { Node } from "../engine/search-engine";
 
 export namespace htmlUtil {
   export function getOffsetOfOpenTag(v: HTMLParser.HTMLElement) {
@@ -12,7 +13,7 @@ export namespace htmlUtil {
     return { startOffset, endOffset };
   }
 
-  export function getOffsetOfCloseTag(v: HTMLParser.HTMLElement) {
+  export function getOffsetOfCloseTag(v: Node) {
     const startOffset = v.range[0];
     const endOffset = v.range[1];
 

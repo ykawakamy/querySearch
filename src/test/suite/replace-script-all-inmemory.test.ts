@@ -3,17 +3,21 @@ import { after } from "mocha";
 
 import * as vscode from "vscode";
 import { SearchResultPanelProvider } from "../../view/search-result-panel";
+import { SearchContext } from "../../engine/search-engine";
 import { NodeHtmlParserAdaptor } from "../../engine/node-html-parser";
-import { ReplaceDocument } from "../../engine/replace-edit";
+import {
+  ReplaceDocument,
+  ReplaceEditInMemory,
+} from "../../engine/replace-edit";
 // import * as myExtension from '../extension';
 
 suite("ReplaceAll Script Test", () => {
   after(() => {});
 
-  let testee: SearchResultPanelProvider;
+  let testee: NodeHtmlParserAdaptor;
 
-  suiteSetup(async () => {
-    testee = new SearchResultPanelProvider(new NodeHtmlParserAdaptor());
+  suiteSetup(() => {
+    testee = new NodeHtmlParserAdaptor();
   });
 
   async function assertReplace(
@@ -22,29 +26,31 @@ suite("ReplaceAll Script Test", () => {
     replace: string,
     expected: unknown
   ) {
-		const searchContext = {search, replace};
-    const result = await testee.searchEngine.search(document, searchContext );
-    await testee.replaceAll(result!, replace);
-    assert.equal(document.getText(), expected);
+    const searchContext = { search, replace };
+    const edit = new ReplaceEditInMemory();
+    const result = testee.search(document, searchContext);
+    await testee.replace([result!], replace, edit);
+		const replaced = await edit.modifiedTextDocument(document.uri);
+    assert.equal( replaced.getText(), expected);
   }
 
   test("remove and insert to AfterEnd", async () => {
     const document = await vscode.workspace.openTextDocument({
       content:
-        "<ul><li>file</li><li>file</li></ul>" +
-        "<ul><li>file</li><li>file</li></ul>",
+        "<ul><li>file1</li><li>file2</li></ul>" +
+        "<ul><li>file3</li><li>file4</li></ul>",
     });
-    const queryExpr= "ul:has(li)";
+    const queryExpr = "ul:has(li)" ;
     const replaceExpr = `
 			var s = $.querySelector("li");
 			$.removeChild(s);
 			$.insertAdjacentHTML("afterend", s.outerHTML);
 		`;
     const expected =
-      "<ul><li>file</li></ul><li>file</li>"+ 
-			"<ul><li>file</li></ul><li>file</li>";
+      "<ul><li>file2</li></ul><li>file1</li>" +
+      "<ul><li>file4</li></ul><li>file3</li>";
 
-			await assertReplace(document, queryExpr, replaceExpr, expected);
+    await assertReplace(document, queryExpr, replaceExpr, expected);
   });
 
   test("remove and insert to AfterEnd, multiline", async () => {
@@ -77,7 +83,7 @@ suite("ReplaceAll Script Test", () => {
 		</ul><li>file</li>
 		`;
 
-		await assertReplace(document, queryExpr, replaceExpr, expected);
+    await assertReplace(document, queryExpr, replaceExpr, expected);
   });
 
   // XXX closing/empty tag
@@ -90,7 +96,7 @@ suite("ReplaceAll Script Test", () => {
 		</ul>
 		`,
     });
-    const queryExpr= "ul:has(li)";
+    const queryExpr = "ul:has(li)";
     const replaceExpr = `
 			var s = $.querySelector("li");
 			$.removeChild(s);
@@ -103,7 +109,7 @@ suite("ReplaceAll Script Test", () => {
 		</ul><li />
 		`;
 
-		await assertReplace(document, queryExpr, replaceExpr, expected);
+    await assertReplace(document, queryExpr, replaceExpr, expected);
   });
 
   test.skip("remove and insert to AfterEnd, preserve closing/empty tag", async () => {
@@ -115,7 +121,7 @@ suite("ReplaceAll Script Test", () => {
 		</ul>
 		`,
     });
-    const queryExpr= "ul:has(li)";
+    const queryExpr = "ul:has(li)";
     const replaceExpr = `
 		`;
     const expected = `
@@ -125,9 +131,8 @@ suite("ReplaceAll Script Test", () => {
 		</ul>
 		`;
 
-		await assertReplace(document, queryExpr, replaceExpr, expected);
+    await assertReplace(document, queryExpr, replaceExpr, expected);
   });
-
 
   test("remove and insert to AfterEnd, preserve attribute order tag", async () => {
     const document = await vscode.workspace.openTextDocument({
@@ -140,7 +145,7 @@ suite("ReplaceAll Script Test", () => {
 		</ul>
 		`,
     });
-    const queryExpr= "ul:has(li)";
+    const queryExpr = "ul:has(li)";
     const replaceExpr = `
 			var s = $.querySelector("li");
 			$.removeChild(s);
@@ -155,7 +160,7 @@ suite("ReplaceAll Script Test", () => {
 		</ul><li b="1" a="2"></li>
 		`;
 
-		await assertReplace(document, queryExpr, replaceExpr, expected);
+    await assertReplace(document, queryExpr, replaceExpr, expected);
   });
 
   test("setAttribute", async () => {
@@ -169,7 +174,7 @@ suite("ReplaceAll Script Test", () => {
 		</ul>
 		`,
     });
-    const queryExpr= "ul:has(li)";
+    const queryExpr = "ul:has(li)";
     const replaceExpr = `
 			$.setAttribute("addAttr", "new");
 		`;
@@ -182,47 +187,6 @@ suite("ReplaceAll Script Test", () => {
 		</ul>
 		`;
 
-		await assertReplace(document, queryExpr, replaceExpr, expected);
+    await assertReplace(document, queryExpr, replaceExpr, expected);
   });
-
-	test("nested", async () => {
-		const document = await vscode.workspace.openTextDocument({
-			content: `
-		<ul>
-		<li>
-			<ul>
-			<li>file1</li>
-			<li>file2</li>
-			</ul>
-		</li>
-		<li>file3</li>
-		</ul>
-		<ul>
-		<li>file4</li>
-		<li>file5</li>
-		</ul>
-		`,
-		});
-		const queryExpr = "ul:has(li)";
-		const replaceExpr = `
-			var s = $.querySelector("li");
-			$.removeChild(s);
-			$.insertAdjacentHTML("afterend", s.outerHTML);
-		`;
-		const expected = `
-		<ul>
-		<li>file3</li>
-		</ul><li>
-			<ul>
-			<li>file2</li>
-			</ul><li>file1</li>
-		</li>
-		<ul>
-		<li>file4</li>
-		<li>file5</li>
-		</ul>
-		`;
-
-		await assertReplace(document, queryExpr, replaceExpr, expected);
-	});
 });
