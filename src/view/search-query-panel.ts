@@ -107,7 +107,7 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
       const options: vscode.TextDocumentShowOptions = {
         selection: range,
         preserveFocus: true,
-        preview: false,
+        preview: true,
       };
       vscode.commands.executeCommand(
         "vscode.diff",
@@ -191,6 +191,9 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
     const styleMainUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, "media", "main.css")
     );
+    const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'node_modules', '@vscode/codicons', 'dist', 'codicon.css'));
+    const filesToInclude = "files to include";
+    const filesToExclude = "files to exclude";
 
     // Use a nonce to only allow a specific script to be run.
     const nonce = getNonce();
@@ -199,20 +202,41 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
 			<html lang="en">
 			<head>
 				<meta charset="UTF-8">
-				<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+				<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; font-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
 				<meta name="viewport" content="width=device-width, initial-scale=1.0">
 				<link href="${styleResetUri}" rel="stylesheet">
 				<link href="${styleVSCodeUri}" rel="stylesheet">
 				<link href="${styleMainUri}" rel="stylesheet">
+				<link href="${codiconsUri}" rel="stylesheet">
 				<title>Search Query</title>
 			</head>
 			<body>
-        <textarea id="query-expr" rows="1">${this.queryExpr}</textarea>
-				<button id="do-search">Search</button>
-        <textarea id="replace-expr" rows="3" 
-          placeholder="experimental: ex) $.insertAdjacentHTML('afterend', $.removeChild($.querySelector('div')).outerHTML); $"
-          >${this.replaceExpr}</textarea>
-
+        <div class="query-widget">
+          <div class="query-replace-toggle">
+            <div class="icon"><i class="codicon codicon-chevron-right"></i></div>
+          </div>
+          <form class="query-container"> 
+            <div class="inputbox">
+              <textarea id="query-expr" rows="1">${this.queryExpr}</textarea>
+            </div>
+            <button id="do-search">Search</button>
+            <div class="inputbox">
+              <textarea id="replace-expr" rows="3" 
+              placeholder="experimental: ex) $.insertAdjacentHTML('afterend', $.removeChild($.querySelector('div')).outerHTML); $"
+              >${this.replaceExpr}</textarea>
+            </div>
+          </form>
+        </div>
+        <div class="filter-container">
+          <label>${filesToInclude}</label>
+          <div class="inputbox">
+            <input id="filterInclude">
+          </div>
+          <label>${filesToExclude}</label>
+          <div class="inputbox">
+            <input id="filterExclude">
+          </div>
+        </div>
 				<script nonce="${nonce}" src="${scriptUri}"></script>
 			</body>
 			</html>`;

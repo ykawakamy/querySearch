@@ -10,8 +10,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - [ ] including/excluding target files.
   - [x] excluding `.gitignore` definition.
 - [ ] improve replace feature. 
-  - [ ] replace preview
+  - [x] replace preview
   - [ ] add replace script editor.
+
+## [0.0.2] - 2023-05-xx
+ - replace preview
 
 ## [0.0.1] - 2023-03-11
 

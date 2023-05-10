@@ -5,3 +5,17 @@ body {
 textarea {
 	resize:vertical;
 }
+
+.query-widget{
+	display: flex;
+	align-items: stretch;
+}
+
+.query-replace-toggle{
+	flex-shrink: 1;
+	align-content: center;
+}
+
+.query-container{
+	flex-grow: 1;
+}
