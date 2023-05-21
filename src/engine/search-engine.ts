@@ -77,4 +77,8 @@ export abstract class SearchEngine {
 export type SearchContext = {
   search: string;
   replace?: string;
+  replaceToggle?: boolean;
+  filterToggle?: boolean;
+  includes?: string;
+  excludes?: string;
 };

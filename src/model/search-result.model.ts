@@ -6,12 +6,14 @@ import * as vm from "vm";
 import { Utils } from "vscode-uri";
 import { htmlUtil } from "../util/html-util";
 import { Node } from "../engine/search-engine";
+import path = require("path");
 export class SerachResult extends vscode.TreeItem {
   items: SerachResultItem[];
   resourceUri: vscode.Uri;
 
   constructor(uri: vscode.Uri, items?: Node[]) {
     super(uri);
+    this.description = path.dirname(uri.fsPath);
     this.resourceUri = uri;
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     this.items =

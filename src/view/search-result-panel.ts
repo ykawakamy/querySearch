@@ -6,9 +6,8 @@ import { Constants } from "../constants";
 import { posix } from "path";
 import { URI, Utils } from "vscode-uri";
 import * as HTMLParser from "node-html-parser";
-
+import ignore from "ignore";
 import * as vm from "vm";
-import minimatch from "minimatch";
 import { setTimeout } from "timers/promises";
 import {
   ReplaceDocument,
@@ -16,13 +15,12 @@ import {
   ReplaceEditInMemory,
   ReplaceEditTextDocument,
 } from "../engine/replace-edit";
-import { SearchContext, SearchEngine} from "../engine/search-engine";
+import { SearchContext, SearchEngine } from "../engine/search-engine";
+import { minimatch } from "minimatch";
 
 export class SearchResultPanelProvider
   implements vscode.TreeDataProvider<SerachResult>
 {
-  private _replaceExpr: string = "";
-  private _queryExpr: string = "";
   private _view?: vscode.TreeView<SerachResult | SerachResultItem>;
 
   queryContext!: SearchContext;
@@ -84,15 +82,15 @@ export class SearchResultPanelProvider
     }
 
     const index = this._result.findIndex(
-      (v) => 
-        v.resourceUri?.scheme === uri.fsPath
-        && v.resourceUri?.fsPath === uri.fsPath
+      (v) =>
+        v.resourceUri?.scheme === uri.scheme &&
+        v.resourceUri?.fsPath === uri.fsPath
     );
     if (index === -1) {
       return;
     }
 
-    const r = await this.searchEngine.search(document, this.queryContext);
+    const r = this.searchEngine.search(document, this.queryContext);
     if (r) {
       this._result.splice(index, 1, r);
       this._onDidChangeTreeData.fire(undefined);
@@ -127,13 +125,7 @@ export class SearchResultPanelProvider
       return;
     }
 
-    const workspaceFolder = (vscode.workspace.workspaceFolders ?? []).filter(
-      (folder) => folder.uri.scheme === "file"
-    )[0].uri;
-    const gitIgnorePatterns = await this.getIgnorePattern(workspaceFolder);
-
     this.queryContext = queryExpr;
-
     vscode.window.withProgress(
       { location: { viewId: Constants.VIEW_ID_SEARCHRESULT } },
       async (progress, token) => {
@@ -142,33 +134,67 @@ export class SearchResultPanelProvider
         });
 
         this.clearResult();
-        await this.search(gitIgnorePatterns, workspaceFolder, queryExpr);
+
+        const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
+        for (const workspaceFolder of workspaceFolders.filter(
+          (folder) => folder.uri.scheme === "file"
+        )) {
+          const gitIgnorePatterns = await this.getIgnorePattern(
+            workspaceFolder.uri
+          );
+          const filter = await this.filter(
+            workspaceFolder,
+            gitIgnorePatterns,
+            queryExpr
+          );
+          await this.search(filter, workspaceFolder.uri, queryExpr);
+        }
         progress.report({ increment: 100 });
       }
     );
   }
 
-  async search(
+  filter(
+    workspaceFolder: vscode.WorkspaceFolder,
     gitIgnorePatterns: string[],
+    queryExpr: SearchContext
+  ) {
+    const ig = ignore().add(gitIgnorePatterns);
+    if (queryExpr.excludes) {
+      ig.add(queryExpr.excludes!);
+    }
+    const includes = queryExpr.includes ? (t:string)=> ignore().add(queryExpr.includes!).test(t).ignored: (t : string)=>true;
+    const filter = (filePath: string, isFolder: boolean) => {
+      const relative = path.relative(workspaceFolder.uri.fsPath, filePath);
+
+      if (ig.test(relative).ignored) {
+        return false;
+      }
+      return isFolder || includes(relative);
+    };
+    return filter;
+  }
+
+  async search(
+    filter: (filePath: string, isFolder: boolean) => boolean,
     folder: vscode.Uri,
     queryExpr: SearchContext
   ) {
     for (const [name, type] of await vscode.workspace.fs.readDirectory(
       folder
     )) {
-      const filePath = posix.join(folder.path, name);
+      const filePath = posix.join(folder.fsPath, name);
       // exclude .gitignore
-      if (gitIgnorePatterns.some((pattern) => minimatch(filePath, pattern))) {
-        continue;
-      }
       if (type === vscode.FileType.File) {
+        if (!filter(filePath, false)) {
+          continue;
+        }
         await this.searchFile(folder.with({ path: filePath }), queryExpr);
       } else if (type === vscode.FileType.Directory) {
-        await this.search(
-          gitIgnorePatterns,
-          folder.with({ path: filePath }),
-          queryExpr
-        );
+        if (!filter(filePath, true)) {
+          continue;
+        }
+        await this.search(filter, folder.with({ path: filePath }), queryExpr);
       }
     }
   }
@@ -190,8 +216,7 @@ export class SearchResultPanelProvider
     const gitIgnorePatterns = (await gitIgnore)
       .split("\n")
       .map((line) => line.trim())
-      .filter((line) => line !== "")
-      .map((line) => posix.join(workspaceFolder.path, line));
+      .filter((line) => line !== "" && !line.startsWith("#"));
     return gitIgnorePatterns;
   }
 
@@ -224,28 +249,6 @@ export class SearchResultPanelProvider
       const document = await edit.modifiedTextDocument(uri!);
       await this.refresh(document);
     }
-  }
-
-  private async _replaceItem(
-    item: SerachResultItem,
-    document: ReplaceDocument,
-    replaceExpr: string,
-    edit: ReplaceEdit
-  ) {
-    const baseTag = item.tag;
-
-    const $ = baseTag.clone();
-    const vmContext = { $: $ };
-    vm.createContext(vmContext);
-    const result = vm.runInContext(replaceExpr, vmContext, {
-      timeout: 1000,
-    });
-
-    await edit.replace(
-      document.uri,
-      baseTag.range,
-      this.searchEngine.getReplacedText($)
-    );
   }
 
   async getResultText() {

@@ -15,9 +15,17 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
   private _view?: vscode.WebviewView;
   private _extensionUri;
   private _target?: SerachResultItem | SerachResult;
-
-  queryExpr: string = "";
-  replaceExpr: string = "";
+  _searchContext!: SearchContext;
+  set searchContext(v: SearchContext){
+    this._searchContext = v;
+    this._context?.workspaceState.update(
+      Constants.STATE.LATEST_QUERY,
+      this.searchContext
+    );
+  }
+  get searchContext(): SearchContext{
+    return this._searchContext;
+  }
 
   constructor(
     private _context: vscode.ExtensionContext,
@@ -25,13 +33,9 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
   ) {
     this._extensionUri = _context.extensionUri;
 
-    this.queryExpr = _context.workspaceState.get(
+    this._searchContext = _context.workspaceState.get(
       Constants.STATE.LATEST_QUERY,
-      ""
-    );
-    this.replaceExpr = _context.workspaceState.get(
-      Constants.STATE.LATEST_REPLACE_EXPRESSION,
-      ""
+      { search: "" }
     );
 
     _context.subscriptions.push(
@@ -46,7 +50,10 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
       ),
       vscode.commands.registerCommand(
         Constants.COMMAND_QUERYSEARCH_OPENFILE,
-        (resource, start, end) => this.openReplacePreview(resource, start, end)
+        (resource, start, end) =>
+          this.searchContext.replaceToggle
+            ? this.openReplacePreview(resource, start, end)
+            : this.openResource(resource, start, end)
       ),
       vscode.commands.registerCommand(
         Constants.COMMAND_QUERYSEARCH_REPLACE,
@@ -94,10 +101,7 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
       scheme: Constants.SCHEMA_PREVIEW,
       path: resource.path,
       fragment: resource.scheme,
-      query: JSON.stringify({
-        search: this.queryExpr,
-        replace: this.replaceExpr,
-      }),
+      query: JSON.stringify(this.searchContext),
     });
     vscode.workspace.openTextDocument(resource).then((document) => {
       const range = new vscode.Range(
@@ -132,21 +136,26 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [this._extensionUri],
     };
 
-    webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+    webviewView.webview.html = this._getHtmlForWebview(
+      webviewView.webview,
+      context.state
+    );
+
     webviewView.webview.onDidReceiveMessage((data: any) => {
       switch (data.type) {
         case "do-search": {
-          this.queryExpr = data.queryExpr;
-          this._context?.workspaceState.update(
-            Constants.STATE.LATEST_QUERY,
-            this.queryExpr
-          );
-          this.resultPanel.searchWorkspace({ search: this.queryExpr });
+          this.searchContext = {
+            ...this.searchContext,
+            search: data.queryExpr,
+            includes: data.filterIncludes,
+            excludes: data.filterExcludes,
+          };
+
+          this.resultPanel.searchWorkspace(this.searchContext);
           break;
         }
         case "do-replace": {
           if (this._target instanceof SerachResultItem) {
-            this.replaceExpr = data.replaceExpr;
             this.resultPanel.replace(this._target, data.replaceExpr);
             this._target = undefined;
           }
@@ -154,30 +163,42 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
         }
         case "do-replace-all": {
           if (this._target instanceof SerachResult) {
-            this.replaceExpr = data.replaceExpr;
             this.resultPanel.replaceAll(this._target, data.replaceExpr);
             this._target = undefined;
           }
           break;
         }
         case "do-replace-files": {
-          this.replaceExpr = data.replaceExpr;
           this.resultPanel.replaceAllFiles(data.replaceExpr);
           break;
         }
         case "change-replace": {
-          this.replaceExpr = data.replaceExpr;
-          this._context?.workspaceState.update(
-            Constants.STATE.LATEST_REPLACE_EXPRESSION,
-            this.replaceExpr
-          );
+          this.searchContext = {
+            ...this.searchContext,
+            replace: data.replaceExpr,
+          };
+          
+          break;
+        }
+        case "query-replace-toggle": {
+          this.searchContext = {
+            ...this.searchContext,
+            replaceToggle: data.hidden,
+          };
+          break;
+        }
+        case "filter-toggle": {
+          this.searchContext = {
+            ...this.searchContext,
+            filterToggle: data.hidden,
+          };
           break;
         }
       }
     });
   }
 
-  private _getHtmlForWebview(webview: vscode.Webview) {
+  private _getHtmlForWebview(webview: vscode.Webview, state: any) {
     // Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
     const scriptUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, "media", "main.js")
@@ -191,7 +212,15 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
     const styleMainUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, "media", "main.css")
     );
-    const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'node_modules', '@vscode/codicons', 'dist', 'codicon.css'));
+    const codiconsUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(
+        this._extensionUri,
+        "node_modules",
+        "@vscode/codicons",
+        "dist",
+        "codicon.css"
+      )
+    );
     const filesToInclude = "files to include";
     const filesToExclude = "files to exclude";
 
@@ -212,30 +241,26 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
 			</head>
 			<body>
         <div class="query-widget">
-          <div class="query-replace-toggle">
-            <div class="icon"><i class="codicon codicon-chevron-right"></i></div>
-          </div>
-          <form class="query-container"> 
-            <div class="inputbox">
-              <textarea id="query-expr" rows="1">${this.queryExpr}</textarea>
-            </div>
+          <a class="query-replace-toggle" id="query-replace-toggle">
+            <div id="query-replace-toggle-off" class="icon"><i class="codicon codicon-chevron-right"></i></div>
+            <div id="query-replace-toggle-on" class="icon"><i class="codicon codicon-chevron-down"></i></div>
+          </a>
+          <div class="query-container container"> 
+            <textarea id="query-expr" rows="1"></textarea>
             <button id="do-search">Search</button>
-            <div class="inputbox">
-              <textarea id="replace-expr" rows="3" 
-              placeholder="experimental: ex) $.insertAdjacentHTML('afterend', $.removeChild($.querySelector('div')).outerHTML); $"
-              >${this.replaceExpr}</textarea>
-            </div>
-          </form>
+            <textarea id="replace-expr" rows="3" 
+            placeholder="experimental: ex) $.insertAdjacentHTML('afterend', $.removeChild($.querySelector('div')).outerHTML); $"
+            ></textarea>
+          </div>
         </div>
-        <div class="filter-container">
+        <a class="filter-toggle" id="filter-toggle">
+          <div class="icon"><i class="codicon codicon-kebab-horizontal"></i></div>
+        </a>
+        <div class="filter-container container" id="filter-container">
           <label>${filesToInclude}</label>
-          <div class="inputbox">
-            <input id="filterInclude">
-          </div>
+          <input id="filter-includes">
           <label>${filesToExclude}</label>
-          <div class="inputbox">
-            <input id="filterExclude">
-          </div>
+          <input id="filter-excludes">
         </div>
 				<script nonce="${nonce}" src="${scriptUri}"></script>
 			</body>
