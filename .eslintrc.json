@@ -16,6 +16,16 @@
         "no-throw-literal": "warn",
         "semi": "off"
     },
+    "overrides": [
+        {
+          "files": ["**/*.ts"],
+          "rules": {
+          },
+          "parserOptions": {
+            "project": ["./tsconfig.json"]
+          }
+        }
+    ],
     "ignorePatterns": [
         "out",
         "dist",

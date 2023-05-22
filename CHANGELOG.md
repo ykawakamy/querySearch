@@ -7,11 +7,19 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 - [ ] add configuration.
   - [ ] filtering file extensions and languageId.
-- [ ] including/excluding target files.
+- [x] including/excluding target files.
   - [x] excluding `.gitignore` definition.
 - [ ] improve replace feature. 
-  - [ ] replace preview
+  - [x] replace preview
   - [ ] add replace script editor.
+
+
+## [0.0.3] - 2023-05-22
+ - fix control icons not showing in querypanel view. 
+
+## [0.0.2] - 2023-05-21
+ - add replace preview
+ - including/excluding target files.
 
 ## [0.0.1] - 2023-03-11
 
