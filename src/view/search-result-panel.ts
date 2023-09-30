@@ -16,7 +16,6 @@ import {
   ReplaceEditTextDocument,
 } from "../engine/replace-edit";
 import { SearchContext, SearchEngine } from "../engine/search-engine";
-import { minimatch } from "minimatch";
 
 export class SearchResultPanelProvider
   implements vscode.TreeDataProvider<SerachResult>
