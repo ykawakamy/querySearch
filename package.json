@@ -111,6 +111,7 @@
     "@vscode/codicons": "^0.0.33",
     "glob": "^8.1.0",
     "ignore": "^5.2.4",
+    "html-parser": "file:../html-parser",
     "node-html-parser": "^6.1.4",
     "vscode-html-languageservice": "^5.0.5",
     "vscode-languageserver": "^8.1.0",

@@ -17,7 +17,11 @@ suite("ReplaceAll Script Test", () => {
   let testee: NodeHtmlParserAdaptor;
 
   suiteSetup(() => {
-    testee = new NodeHtmlParserAdaptor();
+    testee = new class extends NodeHtmlParserAdaptor{
+			canApply(uri: vscode.Uri): boolean {
+				return true;
+			}
+		};
   });
 
   async function assertReplace(
@@ -29,7 +33,7 @@ suite("ReplaceAll Script Test", () => {
     const searchContext = { search, replace };
     const edit = new ReplaceEditInMemory();
     const result = testee.search(document, searchContext);
-    await testee.replace([result!], replace, edit);
+    await testee.replace(result!, replace, edit);
 		const replaced = await edit.modifiedTextDocument(document.uri);
     assert.equal( replaced.getText(), expected);
   }

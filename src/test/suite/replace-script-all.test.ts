@@ -13,7 +13,11 @@ suite("ReplaceAll Script Test", () => {
   let testee: SearchResultPanelProvider;
 
   suiteSetup(async () => {
-    testee = new SearchResultPanelProvider(new NodeHtmlParserAdaptor());
+    testee = new SearchResultPanelProvider(new class extends NodeHtmlParserAdaptor{
+			canApply(uri: vscode.Uri): boolean {
+				return true;
+			}
+		});
   });
 
   async function assertReplace(
@@ -23,7 +27,8 @@ suite("ReplaceAll Script Test", () => {
     expected: unknown
   ) {
 		const searchContext = {search, replace};
-    const result = await testee.searchEngine.search(document, searchContext );
+		const result = new NodeHtmlParserAdaptor().search(document, searchContext );
+
     await testee.replaceAll(result!, replace);
     assert.equal(document.getText(), expected);
   }

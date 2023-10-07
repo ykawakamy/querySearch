@@ -7,15 +7,14 @@ import {
   Uri,
 } from "vscode";
 import { Constants } from "../constants";
-import { SearchResultPanelProvider } from "./search-result-panel";
-import { SearchContext, SearchEngine } from "../engine/search-engine";
 import { ReplaceEditInMemory } from "../engine/replace-edit";
+import { SearchContext, SearchEngine } from "../engine/search-engine";
 
 export class ReplacePreviewDocumentProvider
   implements TextDocumentContentProvider, Disposable
 {
   searchContext: SearchContext = <any>{};
-  constructor(private searchEngine: SearchEngine) {}
+  constructor(private searchEngine: SearchEngine<any>) {}
 
   init(context: vscode.ExtensionContext) {
     context.subscriptions.push(
@@ -52,7 +51,7 @@ export class ReplacePreviewDocumentProvider
     if (!searchResult){
       return "";
     }
-    await this.searchEngine.replace([searchResult], searchContext.replace, edit);
+    await this.searchEngine.replace(searchResult, searchContext.replace, edit);
 
     return text.getText();
   }

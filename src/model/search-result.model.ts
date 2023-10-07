@@ -5,13 +5,13 @@ import * as HTMLParser from "node-html-parser";
 import * as vm from "vm";
 import { Utils } from "vscode-uri";
 import { htmlUtil } from "../util/html-util";
-import { Node } from "../engine/search-engine";
+import { QSNode } from "../engine/search-engine";
 import path = require("path");
 export class SerachResult extends vscode.TreeItem {
   items: SerachResultItem[];
   resourceUri: vscode.Uri;
 
-  constructor(uri: vscode.Uri, items?: Node[]) {
+  constructor(uri: vscode.Uri, items?: QSNode[]) {
     super(uri);
     this.description = path.dirname(uri.fsPath);
     this.resourceUri = uri;
@@ -24,7 +24,7 @@ export class SerachResult extends vscode.TreeItem {
     this.contextValue = Constants.CONTEXT_VALUE.FILE;
   }
 
-  private toItem(v: Node, uri: vscode.Uri) {
+  private toItem(v: QSNode, uri: vscode.Uri) {
     const { startOffset, endOffset } = htmlUtil.getOffsetOfCloseTag(v);
     const item = new SerachResultItem(uri, v, startOffset, endOffset);
     item.parent = this;
@@ -38,7 +38,7 @@ export class SerachResult extends vscode.TreeItem {
 }
 
 export class SerachResultItem extends vscode.TreeItem {
-  tag: Node;
+  tag: QSNode;
   startOffset: number;
   endOffset: number;
   parent!: SerachResult;
@@ -46,7 +46,7 @@ export class SerachResultItem extends vscode.TreeItem {
 
   constructor(
     uri: vscode.Uri,
-    tag: Node,
+    tag: QSNode,
     startOffset: number,
     endOffset: number
   ) {

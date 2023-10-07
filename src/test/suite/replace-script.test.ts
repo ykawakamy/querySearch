@@ -14,7 +14,11 @@ suite("Replace Script Test", () => {
 	let testee: SearchResultPanelProvider;
 
   suiteSetup(async () => {
-    testee = new SearchResultPanelProvider(new NodeHtmlParserAdaptor());
+    testee = new SearchResultPanelProvider(new class extends NodeHtmlParserAdaptor{
+			canApply(uri: vscode.Uri): boolean {
+				return true;
+			}
+		});
   });
 
   async function assertReplace(
@@ -24,7 +28,8 @@ suite("Replace Script Test", () => {
     expected: unknown
   ) {
 		const searchContext = {search, replace};
-    const result = await testee.searchEngine.search(document, searchContext );
+		const result = new NodeHtmlParserAdaptor().search(document, searchContext );
+
 		await testee.replace(result!.items[0], replace);
     assert.equal(document.getText(), expected);
   }
@@ -202,12 +207,11 @@ suite("Replace Script Test", () => {
 		`;
     const expected = `
 		<ul>
-
+		
 		</ul><li onclick='
 			console.log("one");
 			console.log("two");
 		'></li>
-
 		`;
 
     await assertReplace(document, queryExpr, replaceExpr, expected);

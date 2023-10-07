@@ -1,21 +1,16 @@
-import * as vscode from "vscode";
-import * as path from "path";
 import * as fs from "fs/promises";
-import { SerachResult, SerachResultItem } from "../model/search-result.model";
-import { Constants } from "../constants";
-import { posix } from "path";
-import { URI, Utils } from "vscode-uri";
-import * as HTMLParser from "node-html-parser";
 import ignore from "ignore";
-import * as vm from "vm";
-import { setTimeout } from "timers/promises";
+import * as path from "path";
+import { posix } from "path";
+import * as vscode from "vscode";
+import { Constants } from "../constants";
 import {
   ReplaceDocument,
   ReplaceEdit,
-  ReplaceEditInMemory,
-  ReplaceEditTextDocument,
+  ReplaceEditTextDocument
 } from "../engine/replace-edit";
 import { SearchContext, SearchEngine } from "../engine/search-engine";
+import { SerachResult, SerachResultItem } from "../model/search-result.model";
 
 export class SearchResultPanelProvider
   implements vscode.TreeDataProvider<SerachResult>
@@ -32,7 +27,10 @@ export class SearchResultPanelProvider
   readonly onDidChangeTreeData: vscode.Event<SerachResult | undefined> =
     this._onDidChangeTreeData.event;
 
-  constructor(public searchEngine: SearchEngine) {}
+  searchEngines: SearchEngine<any>[];
+  constructor(...searchEngines: SearchEngine<any>[]) {
+    this.searchEngines = searchEngines;
+  }
 
   init(context: vscode.ExtensionContext) {
     this._context = context;
@@ -76,7 +74,8 @@ export class SearchResultPanelProvider
 
   async refresh(document: ReplaceDocument) {
     const uri = document.uri;
-    if (!this.isTargetFile(uri)) {
+    const searchEngine = this.searchEngines.find(v=>v.canApply(uri));
+    if (!searchEngine) {
       return;
     }
 
@@ -89,7 +88,7 @@ export class SearchResultPanelProvider
       return;
     }
 
-    const r = this.searchEngine.search(document, this.queryContext);
+    const r = searchEngine.search(document, this.queryContext);
     if (r) {
       this._result.splice(index, 1, r);
       this._onDidChangeTreeData.fire(undefined);
@@ -117,7 +116,7 @@ export class SearchResultPanelProvider
 
   async searchWorkspace(queryExpr: SearchContext) {
     try {
-      this.searchEngine.validateSearchContext(queryExpr);
+      // this.searchEngine.validateSearchContext(queryExpr);
     } catch (e) {
       console.log("invalid search expression.", e);
       vscode.window.showErrorMessage("invalid search expression.");
@@ -199,11 +198,12 @@ export class SearchResultPanelProvider
   }
 
   async searchFile(uri: vscode.Uri, queryExpr: SearchContext) {
-    if (!this.isTargetFile(uri)) {
+    const searchEngine = this.searchEngines.find(v=>v.canApply(uri));
+    if (!searchEngine) {
       return;
     }
     const content$ = await vscode.workspace.openTextDocument(uri);
-    const result = await this.searchEngine.search(content$, queryExpr);
+    const result = searchEngine.search(content$, queryExpr);
     if (result) {
       this.addResult(result);
     }
@@ -230,15 +230,23 @@ export class SearchResultPanelProvider
     const edit = new ReplaceEditTextDocument();
     const searchResults = [searchResult];
 
-    await this.searchEngine.replace(searchResults, replaceExpr, edit);
-    await this._refresh(searchResults, edit);
+    const searchEngine = this.searchEngines.find((v=>v.canApply(searchResult.resourceUri)));
+    if(searchEngine){
+      await searchEngine.replace(searchResult, replaceExpr, edit);
+      await this._refresh(searchResults, edit);
+    }
   }
 
   async replaceAllFiles(replaceExpr: string) {
     const edit = new ReplaceEditTextDocument();
     const searchResults = this._result;
 
-    await this.searchEngine.replace(searchResults, replaceExpr, edit);
+    for( const searchResult of searchResults){
+      const searchEngine = this.searchEngines.find((v=>v.canApply(searchResult.resourceUri)));
+      if(searchEngine){
+        await searchEngine.replace(searchResult, replaceExpr, edit);
+      }
+    }
     await this._refresh(searchResults, edit);
   }
 
