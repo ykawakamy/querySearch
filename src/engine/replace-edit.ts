@@ -1,5 +1,3 @@
-import { Node } from "node-html-parser";
-import { TextDecoder } from "util";
 import * as vscode from "vscode";
 import { Range } from "vscode";
 

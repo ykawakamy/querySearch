@@ -1,19 +1,14 @@
-import * as HTMLParser from "node-html-parser";
+import { IPHtmlElement, IPHtmlNode } from "html-parser/dist/interface";
+import * as ts from "typescript";
 import * as vm from "vm";
 import * as vscode from "vscode";
-import * as ts from "typescript";
 import { SerachResult, SerachResultItem } from "../model/search-result.model";
 import {
   ReplaceDocument,
   ReplaceEdit
 } from "./replace-edit";
-import { IPHtmlElement, IPHtmlNode } from "html-parser/dist/interface";
-import { htmlUtil } from "../util/html-util";
-import { PHtmlDocument } from "html-parser/dist/model/PHtmlDocument";
-import { PHtmlElement } from "html-parser/dist/model/PHtmlElement";
-import { PHtmlNode } from "html-parser/dist/model/PHtmlNode";
 
-export type QSNode = any | HTMLParser.HTMLElement | HTMLParser.Node | IPHtmlNode | IPHtmlElement | ts.Node;
+export type QSNode = any | IPHtmlNode | IPHtmlElement | ts.Node;
 
 export abstract class SearchEngine<TNode> {
   abstract canApply(uri : vscode.Uri): boolean;

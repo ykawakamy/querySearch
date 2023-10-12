@@ -1,13 +1,12 @@
-import { QSNode, SearchContext, SearchEngine } from "./search-engine";
-import * as HTMLParser from "node-html-parser";
 import * as CSSselect from "css-select";
 import { pHtmlParser } from "html-parser";
+import { IPHtmlDocument, IPHtmlElement, IPHtmlNode } from "html-parser/dist/interface";
 import { PHtmlDocument } from "html-parser/dist/model/PHtmlDocument";
 import { PHtmlElement } from "html-parser/dist/model/PHtmlElement";
 import { PHtmlNode } from "html-parser/dist/model/PHtmlNode";
-import { IPHtmlElement, IPHtmlNode, IPHtmlDocument } from "html-parser/dist/interface";
-import { htmlUtil } from "../util/html-util";
 import * as vscode from "vscode";
+import { htmlUtil } from "../util/html-util";
+import { SearchContext, SearchEngine } from "./search-engine";
 
 type TNode = IPHtmlElement | IPHtmlNode | IPHtmlDocument;
 export class NodeHtmlParserAdaptor extends SearchEngine<TNode> {

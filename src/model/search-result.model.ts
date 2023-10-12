@@ -1,11 +1,7 @@
-import { HTMLElement } from "node-html-parser";
 import * as vscode from "vscode";
 import { Constants } from "../constants";
-import * as HTMLParser from "node-html-parser";
-import * as vm from "vm";
-import { Utils } from "vscode-uri";
-import { htmlUtil } from "../util/html-util";
 import { QSNode } from "../engine/search-engine";
+import { htmlUtil } from "../util/html-util";
 import path = require("path");
 export class SerachResult extends vscode.TreeItem {
   items: SerachResultItem[];

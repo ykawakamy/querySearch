@@ -1,8 +1,8 @@
 {
   "name": "querysearch",
   "displayName": "querySearch",
-  "description": "",
-  "version": "0.0.3",
+  "description": "This extension is search html file by `CSS Selector`.",
+  "version": "0.0.4",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -100,6 +100,7 @@
     "@typescript-eslint/parser": "^5.49.0",
     "@vscode/test-electron": "^2.2.2",
     "eslint": "^8.33.0",
+    "glob": "^8.1.0",
     "mocha": "^10.1.0",
     "ts-loader": "^9.4.2",
     "typescript": "^4.9.4",
@@ -109,12 +110,8 @@
   },
   "dependencies": {
     "@vscode/codicons": "^0.0.33",
-    "glob": "^8.1.0",
-    "ignore": "^5.2.4",
     "html-parser": "file:../html-parser",
-    "node-html-parser": "^6.1.4",
-    "vscode-html-languageservice": "^5.0.5",
-    "vscode-languageserver": "^8.1.0",
+    "ignore": "^5.2.4",
     "vscode-uri": "^3.0.7"
   }
 }

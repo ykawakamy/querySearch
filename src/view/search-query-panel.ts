@@ -1,13 +1,9 @@
-import { posix } from "path";
 import * as vscode from "vscode";
-import { URI, Utils } from "vscode-uri";
-import * as HTMLParser from "node-html-parser";
-import { TextDecoder } from "util";
-import { SearchResultPanelProvider } from "./search-result-panel";
-import { SerachResult, SerachResultItem } from "../model/search-result.model";
 import { Constants } from "../constants";
-import path = require("path");
 import { SearchContext } from "../engine/search-engine";
+import { SerachResult, SerachResultItem } from "../model/search-result.model";
+import { SearchResultPanelProvider } from "./search-result-panel";
+import path = require("path");
 
 export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
   public static readonly viewId = Constants.VIEW_ID_QUERY;
