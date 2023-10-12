@@ -2,11 +2,9 @@ import assert = require("assert");
 import { after } from "mocha";
 
 import * as vscode from "vscode";
-import { SearchResultPanelProvider } from "../../view/search-result-panel";
-import { SearchContext } from "../../engine/search-engine";
 import { NodeHtmlParserAdaptor } from "../../engine/node-html-parser";
-import { ReplaceDocument, ReplaceEditInMemory } from "../../engine/replace-edit";
-// import * as myExtension from '../extension';
+import { ReplaceDocument } from "../../engine/replace-edit";
+import { SearchResultPanelProvider } from "../../view/search-result-panel";
 
 suite("Replace Script Test", () => {
   after(() => {});

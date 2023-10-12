@@ -13,8 +13,10 @@ import { SearchContext, SearchEngine } from "../engine/search-engine";
 export class ReplacePreviewDocumentProvider
   implements TextDocumentContentProvider, Disposable
 {
-  searchContext: SearchContext = <any>{};
-  constructor(private searchEngine: SearchEngine<any>) {}
+  searchEngines: SearchEngine<any>[];
+  constructor(..._searchEngines: SearchEngine<any>[]) {
+    this.searchEngines = _searchEngines;
+  }
 
   init(context: vscode.ExtensionContext) {
     context.subscriptions.push(
@@ -46,12 +48,19 @@ export class ReplacePreviewDocumentProvider
     const text = await edit.openTextDocument(
       uri.with({ scheme: uri.fragment, path: uri.path })
     );
-    const searchContext = JSON.parse(uri.query);
-    const searchResult = await this.searchEngine.search(text, searchContext);
+    const {searchContext, index} = JSON.parse(uri.query) ;
+    const searchEngine = this.searchEngines.find(v=>v.canApply(uri));
+    if( !searchEngine){
+      console.warn("can not found appliable engine.");
+      return "";
+    }
+
+    const searchResult = searchEngine.search(text, searchContext);
     if (!searchResult){
       return "";
     }
-    await this.searchEngine.replace(searchResult, searchContext.replace, edit);
+    searchResult.items = searchResult.items.filter(v=>v.index === index);
+    await searchEngine.replace(searchResult, searchContext.replace, edit);
 
     return text.getText();
   }

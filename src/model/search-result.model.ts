@@ -17,16 +17,16 @@ export class SerachResult extends vscode.TreeItem {
     this.resourceUri = uri;
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     this.items =
-      items?.map((v) => {
-        return this.toItem(v, uri);
+      items?.map((v,i) => {
+        return this.toItem(v, i, uri);
       }) || [];
 
     this.contextValue = Constants.CONTEXT_VALUE.FILE;
   }
 
-  private toItem(v: QSNode, uri: vscode.Uri) {
+  private toItem(v: QSNode, i: number, uri: vscode.Uri) {
     const { startOffset, endOffset } = htmlUtil.getOffsetOfCloseTag(v);
-    const item = new SerachResultItem(uri, v, startOffset, endOffset);
+    const item = new SerachResultItem(uri, v, i, startOffset, endOffset);
     item.parent = this;
     return item;
   }
@@ -38,32 +38,26 @@ export class SerachResult extends vscode.TreeItem {
 }
 
 export class SerachResultItem extends vscode.TreeItem {
-  tag: QSNode;
-  startOffset: number;
-  endOffset: number;
+
   parent!: SerachResult;
-  resourceUri: vscode.Uri;
 
   constructor(
-    uri: vscode.Uri,
-    tag: QSNode,
-    startOffset: number,
-    endOffset: number
+    public resourceUri: vscode.Uri,
+    public tag: QSNode,
+    public index: number,
+    public startOffset: number,
+    public endOffset: number
   ) {
-    super(uri);
-    this.resourceUri = uri;
+    super(resourceUri);
     this.label = tag.toString();
     this.collapsibleState = vscode.TreeItemCollapsibleState.None;
-    this.tag = tag;
-    this.startOffset = startOffset;
-    this.endOffset = endOffset;
 
     this.contextValue = Constants.CONTEXT_VALUE.RESULT;
 
     this.command = {
       command: Constants.COMMAND_QUERYSEARCH_OPENFILE,
       title: "Open File",
-      arguments: [uri, startOffset, endOffset],
+      arguments: [resourceUri, startOffset, endOffset, this],
     };
   }
 }

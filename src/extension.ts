@@ -3,13 +3,17 @@ import { SearchQueryPanelProvider } from "./view/search-query-panel";
 import { SearchResultPanelProvider } from "./view/search-result-panel";
 import { ReplacePreviewDocumentProvider } from "./view/replace-preview";
 import { NodeHtmlParserAdaptor } from "./engine/node-html-parser";
+import { JsxHtmlParserAdapter } from "./engine/jsx-htmlnode-parser";
 
 export function activate(context: vscode.ExtensionContext) {
-  const searchEngine = new NodeHtmlParserAdaptor();
-  const result = new SearchResultPanelProvider(searchEngine);
+  const searchEngines = [
+    new NodeHtmlParserAdaptor(),
+    new JsxHtmlParserAdapter(),
+  ];
+  const result = new SearchResultPanelProvider(...searchEngines);
   result.init(context);
   new SearchQueryPanelProvider(context, result);
-  new ReplacePreviewDocumentProvider(searchEngine).init(context);
+  new ReplacePreviewDocumentProvider(...searchEngines).init(context);
   
 }
 

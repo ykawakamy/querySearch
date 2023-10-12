@@ -24,9 +24,13 @@ export interface ReplaceEdit {
 
 export class ReplaceEditTextDocument implements ReplaceEdit {
   private edit = new vscode.WorkspaceEdit();
+  document: any;
 
   async openTextDocument(uri: vscode.Uri): Promise<vscode.TextDocument> {
-    return vscode.workspace.openTextDocument(uri!);
+    if(!this.document){
+      this.document = vscode.workspace.openTextDocument(uri!);
+    }
+    return this.document;
   }
   async replace(
     uri: vscode.Uri,
@@ -41,43 +45,51 @@ export class ReplaceEditTextDocument implements ReplaceEdit {
     this.edit.replace(uri, vsrange, newText);
   }
   async applyEdit(): Promise<void> {
-    await vscode.workspace.applyEdit(this.edit);
+    const result = await vscode.workspace.applyEdit(this.edit);
+    if( !result ){
+      throw new Error("cannot applyEdit.");
+    } 
   }
 
   async modifiedTextDocument(uri: vscode.Uri): Promise<ReplaceDocument> {
-    return vscode.workspace.openTextDocument(uri!);
+    return this.document;
   }
 }
 
+/**
+ * ReplaceEditInMemory
+ *
+ * NOTE: {@link vscode.workspace.openTextDocument | openTextDocument} has a problem with displaying tabs.
+ */
 export class ReplaceEditInMemory implements ReplaceEdit {
-  cache: Map<string, string> = new Map();
-  offset: Map<string, number> = new Map();
+  content!: string;
+  offset: number = 0;
 
   async openTextDocument(uri: vscode.Uri): Promise<ReplaceDocument> {
-    const content = (await vscode.workspace.openTextDocument(uri!)).getText();
-    
-    this.cache.set(uri.path, content);
-    this.offset.set(uri.path, 0);
-    return { uri: uri, getText: () => this.cache.get(uri.path)! };
+    if(! this.content){
+      this.content = (await vscode.workspace.openTextDocument(uri!)).getText();
+    } 
+
+    return { uri: uri, getText: () => this.content! };
   }
   async replace(
     uri: vscode.Uri,
     range: ReplaceOffset,
     newText: string
   ): Promise<void> {
-    let content = this.cache.get(uri.path)!;
-    let offset = this.offset.get(uri.path)!;
+    let content = this.content;
+    let offset = this.offset;
     content =
       content.substring(0, range[0] - offset) +
       newText +
       content.substring(range[1] - offset);
     offset += range[1] - range[0] - newText.length;
-    this.cache.set(uri.path, content);
-    this.offset.set(uri.path, offset);
+    this.content = content;
+    this.offset = offset;
   }
   async applyEdit(): Promise<void> {}
 
   async modifiedTextDocument(uri: vscode.Uri): Promise<ReplaceDocument> {
-    return { uri: uri, getText: () => this.cache.get(uri.path)! };
+    return { uri: uri, getText: () => this.content };
   }
 }

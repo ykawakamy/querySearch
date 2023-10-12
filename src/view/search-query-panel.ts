@@ -50,9 +50,9 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
       ),
       vscode.commands.registerCommand(
         Constants.COMMAND_QUERYSEARCH_OPENFILE,
-        (resource, start, end) =>
+        (resource, start, end, item: SerachResultItem) =>
           this.searchContext.replaceToggle
-            ? this.openReplacePreview(resource, start, end)
+            ? this.openReplacePreview(resource, item)
             : this.openResource(resource, start, end)
       ),
       vscode.commands.registerCommand(
@@ -96,12 +96,15 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
     });
   }
 
-  openReplacePreview(resource: vscode.Uri, start: any, end: any) {
+  openReplacePreview(resource: vscode.Uri, item: SerachResultItem) {
+    const start = item.startOffset;
+    const end = item.endOffset;
+    const searchContext = this.searchContext;
     const preview = vscode.Uri.from({
       scheme: Constants.SCHEMA_PREVIEW,
       path: resource.path,
       fragment: resource.scheme,
-      query: JSON.stringify(this.searchContext),
+      query: JSON.stringify({searchContext, index: item.index}),
     });
     vscode.workspace.openTextDocument(resource).then((document) => {
       const range = new vscode.Range(
@@ -111,13 +114,13 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
       const options: vscode.TextDocumentShowOptions = {
         selection: range,
         preserveFocus: true,
-        preview: true,
+        // preview: true,
       };
       vscode.commands.executeCommand(
         "vscode.diff",
         resource,
         preview,
-        `repalce preview`,
+        `replace preview`,
         options
       );
     });

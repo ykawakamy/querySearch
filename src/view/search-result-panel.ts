@@ -74,7 +74,7 @@ export class SearchResultPanelProvider
 
   async refresh(document: ReplaceDocument) {
     const uri = document.uri;
-    const searchEngine = this.searchEngines.find(v=>v.canApply(uri));
+    const searchEngine = this.searchEngines.find(v=>v.canApply(document.uri));
     if (!searchEngine) {
       return;
     }
@@ -145,7 +145,7 @@ export class SearchResultPanelProvider
             gitIgnorePatterns,
             queryExpr
           );
-          await this.search(filter, workspaceFolder.uri, queryExpr);
+          await this.searchDirectory(filter, workspaceFolder.uri, queryExpr);
         }
         progress.report({ increment: 100 });
       }
@@ -173,7 +173,7 @@ export class SearchResultPanelProvider
     return filter;
   }
 
-  async search(
+  async searchDirectory(
     filter: (filePath: string, isFolder: boolean) => boolean,
     folder: vscode.Uri,
     queryExpr: SearchContext
@@ -192,7 +192,7 @@ export class SearchResultPanelProvider
         if (!filter(filePath, true)) {
           continue;
         }
-        await this.search(filter, folder.with({ path: filePath }), queryExpr);
+        await this.searchDirectory(filter, folder.with({ path: filePath }), queryExpr);
       }
     }
   }
