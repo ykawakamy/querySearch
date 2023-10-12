@@ -4,7 +4,7 @@
   "description": "This extension is search html file by `CSS Selector`.",
   "version": "0.0.4",
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.83.0"
   },
   "publisher": "yuyakawakamy",
   "repository": {
@@ -95,7 +95,7 @@
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
-    "@types/vscode": "^1.75.0",
+    "@types/vscode": "^1.83.0",
     "@typescript-eslint/eslint-plugin": "^5.49.0",
     "@typescript-eslint/parser": "^5.49.0",
     "@vscode/test-electron": "^2.2.2",
