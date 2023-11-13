@@ -1,32 +1,29 @@
+import { t } from "@vscode/l10n";
 import * as vscode from "vscode";
 import { Range } from "vscode";
-
-export type ReplaceDocument =
-  | vscode.TextDocument
-  | { uri: vscode.Uri; getText(range?: Range): string };
 
 type ReplaceOffset = readonly [number, number];
 
 interface EditRecord {}
 
 export interface ReplaceEdit {
-  openTextDocument(uri: vscode.Uri): Thenable<ReplaceDocument>;
+  openTextDocument(uri: vscode.Uri): Thenable<vscode.TextDocument>;
   replace(
     uri: vscode.Uri,
     range: ReplaceOffset,
     newText: string
   ): Thenable<void>;
   applyEdit(): Thenable<void>;
-  modifiedTextDocument(uri: vscode.Uri): Thenable<ReplaceDocument>;
+  modifiedTextDocument(uri: vscode.Uri): Thenable<vscode.TextDocument>;
 }
 
 export class ReplaceEditTextDocument implements ReplaceEdit {
-  private edit = new vscode.WorkspaceEdit();
-  document: any;
+  protected edit = new vscode.WorkspaceEdit();
+  document!: vscode.TextDocument;
 
   async openTextDocument(uri: vscode.Uri): Promise<vscode.TextDocument> {
     if(!this.document){
-      this.document = vscode.workspace.openTextDocument(uri!);
+      this.document = await vscode.workspace.openTextDocument(uri!);
     }
     return this.document;
   }
@@ -43,51 +40,50 @@ export class ReplaceEditTextDocument implements ReplaceEdit {
     this.edit.replace(uri, vsrange, newText);
   }
   async applyEdit(): Promise<void> {
+    if(this.edit.size === 0){
+      return;
+    }
     const result = await vscode.workspace.applyEdit(this.edit);
     if( !result ){
-      throw new Error("cannot applyEdit.");
+      throw new Error(t("cannot applyEdit."));
     } 
+    await this.document.save();
   }
 
-  async modifiedTextDocument(uri: vscode.Uri): Promise<ReplaceDocument> {
+  async modifiedTextDocument(uri: vscode.Uri): Promise<vscode.TextDocument> {
     return this.document;
   }
 }
 
-/**
- * ReplaceEditInMemory
- *
- * NOTE: {@link vscode.workspace.openTextDocument | openTextDocument} has a problem with displaying tabs.
- */
-export class ReplaceEditInMemory implements ReplaceEdit {
-  content!: string;
-  offset: number = 0;
+export class ReplaceEditMemFsTextDocument extends ReplaceEditTextDocument {
+  document!: vscode.TextDocument;
 
-  async openTextDocument(uri: vscode.Uri): Promise<ReplaceDocument> {
-    if(! this.content){
-      this.content = (await vscode.workspace.openTextDocument(uri!)).getText();
+  async openTextDocument(uri: vscode.Uri): Promise<vscode.TextDocument> {
+    if(!this.document){
+      const memUri = vscode.Uri.from({scheme: "memfs", path: uri.path, fragment: uri.scheme });
+      const document = await vscode.workspace.openTextDocument(memUri);
+
+      // XXX workaround reload
+      const edit = new vscode.WorkspaceEdit();
+      const range = new vscode.Range(
+        document.lineAt(0).range.start,
+        document.lineAt(document.lineCount - 1).range.end
+      );
+      const rawText = await vscode.workspace.fs.readFile(vscode.Uri.from({scheme: uri.fragment, path: uri.path}));
+      edit.replace(document.uri, range, rawText.toString());
+      const result = await vscode.workspace.applyEdit(edit);
+      this.document = document;
+    }
+    return this.document;
+  }
+
+  async applyEdit(): Promise<void> {
+    if(this.edit.size === 0){
+      return;
+    }
+    const result = await vscode.workspace.applyEdit(this.edit);
+    if( !result ){
+      throw new Error(t("cannot applyEdit."));
     } 
-
-    return { uri: uri, getText: () => this.content! };
-  }
-  async replace(
-    uri: vscode.Uri,
-    range: ReplaceOffset,
-    newText: string
-  ): Promise<void> {
-    let content = this.content;
-    let offset = this.offset;
-    content =
-      content.substring(0, range[0] - offset) +
-      newText +
-      content.substring(range[1] - offset);
-    offset += range[1] - range[0] - newText.length;
-    this.content = content;
-    this.offset = offset;
-  }
-  async applyEdit(): Promise<void> {}
-
-  async modifiedTextDocument(uri: vscode.Uri): Promise<ReplaceDocument> {
-    return { uri: uri, getText: () => this.content };
   }
 }

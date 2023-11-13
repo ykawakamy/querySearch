@@ -1,9 +1,13 @@
 import * as vscode from "vscode";
-import { Constants } from "../constants";
-import { SearchContext } from "../engine/search-engine";
+import { Constants, State } from "../constants";
+import { SearchContext } from "../model/search-context.model";
 import { SerachResult, SerachResultItem } from "../model/search-result.model";
 import { SearchResultPanelProvider } from "./search-result-panel";
 import path = require("path");
+import {
+  ReplacePreviewDocumentProvider,
+  getPreviewUri,
+} from "./replace-preview";
 
 export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
   public static readonly viewId = Constants.VIEW_ID_QUERY;
@@ -12,27 +16,25 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
   private _extensionUri;
   private _target?: SerachResultItem | SerachResult;
   _searchContext!: SearchContext;
-  set searchContext(v: SearchContext){
+  set searchContext(v: SearchContext) {
     this._searchContext = v;
-    this._context?.workspaceState.update(
-      Constants.STATE.LATEST_QUERY,
-      this.searchContext
-    );
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    this._context?.workspaceState.update(State.latestQuery, this.searchContext);
   }
-  get searchContext(): SearchContext{
+  get searchContext(): SearchContext {
     return this._searchContext;
   }
 
   constructor(
     private _context: vscode.ExtensionContext,
-    private resultPanel: SearchResultPanelProvider
+    private resultPanel: SearchResultPanelProvider,
+    private previewProvider: ReplacePreviewDocumentProvider
   ) {
     this._extensionUri = _context.extensionUri;
 
-    this._searchContext = _context.workspaceState.get(
-      Constants.STATE.LATEST_QUERY,
-      { search: "" }
-    );
+    this._searchContext = _context.workspaceState.get(State.latestQuery, {
+      search: "",
+    });
 
     _context.subscriptions.push(
       vscode.window.registerWebviewViewProvider(
@@ -40,86 +42,36 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
         this,
         {
           webviewOptions: {
-            retainContextWhenHidden: true,
+            // retainContextWhenHidden: true,
           },
         }
       ),
       vscode.commands.registerCommand(
         Constants.COMMAND_QUERYSEARCH_OPENFILE,
-        (resource, start, end, item: SerachResultItem) =>
+        (item: SerachResultItem) => this.openResource(item)
+      ),
+      vscode.commands.registerCommand(
+        Constants.COMMAND_QUERYSEARCH_PREVIEWFILE,
+        (item: SerachResultItem) =>
           this.searchContext.replaceToggle
-            ? this.openReplacePreview(resource, item)
-            : this.openResource(resource, start, end)
+            ? this.openReplacePreview(item)
+            : this.openResource(item)
       ),
-      vscode.commands.registerCommand(
-        Constants.COMMAND_QUERYSEARCH_REPLACE,
-        (result: SerachResultItem) => {
-          this._target = result;
-          this._view?.webview.postMessage({ type: "prepare-replace" });
-        }
-      ),
-      vscode.commands.registerCommand(
-        Constants.COMMAND_QUERYSEARCH_REPLACEALL,
-        (result: SerachResult) => {
-          this._target = result;
-          this._view?.webview.postMessage({ type: "prepare-replace-all" });
-        }
-      ),
-      vscode.commands.registerCommand(
-        Constants.COMMAND_QUERYSEARCH_REPLACEFILES,
-        () => {
-          this._view?.webview.postMessage({ type: "prepare-replace-files" });
-        }
-      ),
-      vscode.commands.registerCommand(
-        Constants.COMMAND_QUERYSEARCH_COPY_RESULT,
-        async () => {
-          vscode.env.clipboard.writeText(
-            await this.resultPanel.getResultText()
-          );
-        }
-      )
     );
   }
 
-  openResource(resource: vscode.Uri, start: any, end: any) {
-    vscode.workspace.openTextDocument(resource).then((document) => {
-      const range = new vscode.Range(
-        document.positionAt(start),
-        document.positionAt(end)
-      );
-      vscode.window.showTextDocument(document, { selection: range });
-    });
+  openResource(item: SerachResultItem) {
+    const document = item.document;
+    const range = new vscode.Range(
+      document.positionAt(item.startOffset),
+      document.positionAt(item.endOffset)
+    );
+    void vscode.window.showTextDocument(document, { selection: range });
   }
 
-  openReplacePreview(resource: vscode.Uri, item: SerachResultItem) {
-    const start = item.startOffset;
-    const end = item.endOffset;
+  openReplacePreview(item: SerachResultItem) {
     const searchContext = this.searchContext;
-    const preview = vscode.Uri.from({
-      scheme: Constants.SCHEMA_PREVIEW,
-      path: resource.path,
-      fragment: resource.scheme,
-      query: JSON.stringify({searchContext, index: item.index}),
-    });
-    vscode.workspace.openTextDocument(resource).then((document) => {
-      const range = new vscode.Range(
-        document.positionAt(start),
-        document.positionAt(end)
-      );
-      const options: vscode.TextDocumentShowOptions = {
-        selection: range,
-        preserveFocus: true,
-        // preview: true,
-      };
-      vscode.commands.executeCommand(
-        "vscode.diff",
-        resource,
-        preview,
-        `replace preview`,
-        options
-      );
-    });
+    void this.previewProvider.openReplacePreview(item, searchContext);
   }
 
   public resolveWebviewView(
@@ -145,30 +97,12 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
         case "do-search": {
           this.searchContext = {
             ...this.searchContext,
-            search: data.queryExpr,
+            search: data.searchContext,
             includes: data.filterIncludes,
             excludes: data.filterExcludes,
           };
 
-          this.resultPanel.searchWorkspace(this.searchContext);
-          break;
-        }
-        case "do-replace": {
-          if (this._target instanceof SerachResultItem) {
-            this.resultPanel.replace(this._target, data.replaceExpr);
-            this._target = undefined;
-          }
-          break;
-        }
-        case "do-replace-all": {
-          if (this._target instanceof SerachResult) {
-            this.resultPanel.replaceAll(this._target, data.replaceExpr);
-            this._target = undefined;
-          }
-          break;
-        }
-        case "do-replace-files": {
-          this.resultPanel.replaceAllFiles(data.replaceExpr);
+          void this.resultPanel.searchWorkspace(this.searchContext);
           break;
         }
         case "change-replace": {
@@ -176,7 +110,7 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
             ...this.searchContext,
             replace: data.replaceExpr,
           };
-          
+
           break;
         }
         case "query-replace-toggle": {

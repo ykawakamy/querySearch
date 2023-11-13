@@ -1,20 +1,9 @@
 import { PHtmlDocument } from "html-parser/dist/model/PHtml";
 import { PHtmlElement } from "html-parser/dist/model/PHtmlElement";
 import { PHtmlNode } from "html-parser/dist/model/PHtmlNode";
-import { QSNode } from "../engine/search-engine";
+import { QSNode } from "../model/search-context.model";
 
 export namespace htmlUtil {
-  export function getOffsetOfOpenTag(v: QSNode) {
-    const startOffset = v.range[0];
-    const endOffset = Math.min(
-      ...[v.range[1], v.firstChild?.range[0], v.nextSibling?.range[0]].filter(
-        (v) => v
-      )
-    );
-
-    return { startOffset, endOffset };
-  }
-
   export function getOffsetOfCloseTag(v: QSNode) {
     if( v instanceof PHtmlElement || v instanceof PHtmlNode || v instanceof PHtmlDocument ){
       const r = v.range!;

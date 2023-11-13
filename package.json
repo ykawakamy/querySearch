@@ -13,7 +13,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onFileSystem:memfs"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "views": {
@@ -32,16 +34,22 @@
     "commands": [
       {
         "command": "querySearch.openFile",
-        "title": "open file"
+        "title": "open file",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "querySearch.previewFile",
+        "title": "open file",
+        "icon": "$(go-to-file)"
       },
       {
         "command": "querySearch.replace",
-        "title": "Replace",
+        "title": "replace",
         "icon": "$(search-replace)"
       },
       {
         "command": "querySearch.replaceAll",
-        "title": "Replace",
+        "title": "replace in target File",
         "icon": "$(search-replace-all)"
       },
       {
@@ -57,13 +65,23 @@
     "menus": {
       "view/item/context": [
         {
+          "command": "querySearch.openFile",
+          "when": "view == searchResult && viewItem == querySearch.replaceResult",
+          "group": "inline"
+        },
+        {
           "command": "querySearch.replace",
-          "when": "view == searchResult && viewItem == querySearch.result",
+          "when": "view == searchResult && viewItem == querySearch.replaceResult",
+          "group": "inline"
+        },
+        {
+          "command": "querySearch.openFile",
+          "when": "view == searchResult && viewItem == querySearch.replaceFile",
           "group": "inline"
         },
         {
           "command": "querySearch.replaceAll",
-          "when": "view == searchResult && viewItem == querySearch.file",
+          "when": "view == searchResult && viewItem == querySearch.replaceFile",
           "group": "inline"
         },
         {
@@ -98,6 +116,7 @@
     "@types/vscode": "^1.83.0",
     "@typescript-eslint/eslint-plugin": "^5.49.0",
     "@typescript-eslint/parser": "^5.49.0",
+    "@vscode/l10n-dev": "^0.0.30",
     "@vscode/test-electron": "^2.2.2",
     "eslint": "^8.33.0",
     "glob": "^8.1.0",
@@ -110,6 +129,7 @@
   },
   "dependencies": {
     "@vscode/codicons": "^0.0.33",
+    "@vscode/l10n": "^0.0.16",
     "html-parser": "file:../html-parser",
     "ignore": "^5.2.4",
     "vscode-uri": "^3.0.7"

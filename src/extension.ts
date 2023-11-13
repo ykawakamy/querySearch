@@ -10,11 +10,11 @@ export function activate(context: vscode.ExtensionContext) {
     new NodeHtmlParserAdaptor(),
     new JsxHtmlParserAdapter(),
   ];
-  const result = new SearchResultPanelProvider(...searchEngines);
-  result.init(context);
-  new SearchQueryPanelProvider(context, result);
-  new ReplacePreviewDocumentProvider(...searchEngines).init(context);
-  
+  const resultPanel = new SearchResultPanelProvider(...searchEngines);
+  const previewProvider = new ReplacePreviewDocumentProvider(...searchEngines);
+  previewProvider.init(context);
+  resultPanel.init(context);
+  new SearchQueryPanelProvider(context, resultPanel, previewProvider);
 }
 
 export function deactivate() {}

@@ -6,38 +6,38 @@ import { PHtmlElement } from "html-parser/dist/model/PHtmlElement";
 import { PHtmlNode } from "html-parser/dist/model/PHtmlNode";
 import * as vscode from "vscode";
 import { htmlUtil } from "../util/html-util";
-import { SearchContext, SearchEngine } from "./search-engine";
+import { QSNode, SearchContext } from "../model/search-context.model";
+import { SearchEngine } from "./search-engine";
 
-type TNode = IPHtmlElement | IPHtmlNode | IPHtmlDocument;
-export class NodeHtmlParserAdaptor extends SearchEngine<TNode> {
+export class NodeHtmlParserAdaptor extends SearchEngine {
   canApply( uri: vscode.Uri){
     return uri.path.endsWith(".html") || uri.path.endsWith(".htm");
   }
-  createClone(v: TNode): TNode {
+  createClone(v: QSNode): QSNode {
     if( v instanceof PHtmlElement || v instanceof PHtmlNode || v instanceof PHtmlDocument ){
       return v.cloneNode()!;
     }
     throw new Error("unexpected error");
   }
 
-   getRange(baseTag: TNode): readonly [number, number] {
+   getRange(baseTag: QSNode): readonly [number, number] {
     const range = htmlUtil.getOffsetOfCloseTag(baseTag);
     return [range.startOffset, range.endOffset];
   }
 
 
   parser = new pHtmlParser({skipComment: false});
-  validateSearchContext(queryExpr: SearchContext){
-    const compiledQuery = CSSselect.compile(queryExpr.search);
+  validateSearchContext(searchContext: SearchContext){
+    const compiledQuery = CSSselect.compile(searchContext.search);
 
     return true;
   };
-  searchHtml(content: string, queryExpr: SearchContext): TNode[] {
+  searchHtml(content: string, searchContext: SearchContext): QSNode[] {
     const rootNode = this.parser.parse(content);
-    const result = rootNode.querySelectorAll(queryExpr.search);
+    const result = rootNode.querySelectorAll(searchContext.search);
     return [...result];
   }
-  getReplacedText(node: TNode): string{
+  getReplacedText(node: QSNode): string{
     return node.parentNode?.outerHTML ?? "";
   };
   

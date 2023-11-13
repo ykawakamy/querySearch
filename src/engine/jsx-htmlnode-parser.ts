@@ -12,10 +12,11 @@ import { PHtmlNode } from "html-parser/dist/model/PHtmlNode";
 import * as ts from "typescript";
 import * as vscode from "vscode";
 import { htmlUtil } from "../util/html-util";
-import { SearchContext, SearchEngine } from "./search-engine";
+import { SearchContext } from "../model/search-context.model";
+import { SearchEngine } from "./search-engine";
 
 type TNode = IPHtmlElement | IPHtmlNode | IPHtmlDocument;
-export class JsxHtmlParserAdapter extends SearchEngine<IPHtmlNode> {
+export class JsxHtmlParserAdapter extends SearchEngine {
   canApply(uri: vscode.Uri) {
     return uri.path.endsWith(".jsx") || uri.path.endsWith(".tsx");
   }
@@ -35,14 +36,14 @@ export class JsxHtmlParserAdapter extends SearchEngine<IPHtmlNode> {
     return [range.startOffset, range.endOffset];
   }
 
-  validateSearchContext(queryExpr: SearchContext) {
-    const compiledQuery = CSSselect.compile(queryExpr.search);
+  validateSearchContext(searchContext: SearchContext) {
+    const compiledQuery = CSSselect.compile(searchContext.search);
 
     return true;
   }
-  searchHtml(content: string, queryExpr: SearchContext): TNode[] {
+  searchHtml(content: string, searchContext: SearchContext): TNode[] {
     const rootNode = this.parse(content);
-    const result = rootNode.querySelectorAll(queryExpr.search);
+    const result = rootNode.querySelectorAll(searchContext.search);
     return [...result];
   }
   parser = new pHtmlParser({ skipComment: false });

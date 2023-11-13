@@ -20,7 +20,7 @@
 
     vscode.postMessage({
       type: "do-search",
-      queryExpr: $searchExpr.value,
+      searchContext: $searchExpr.value,
       filterIncludes: $filterIncludes.value,
       filterExcludes: $filterExcludes.value,
     });
@@ -64,36 +64,6 @@
     });
   };
   $replaceExpr.addEventListener("input", updateReplaceExpr);
-
-  window.addEventListener("message", (event) => {
-    const message = event.data;
-    switch (message.type) {
-      case "prepare-replace": {
-        const queryExpr = $replaceExpr;
-        vscode.postMessage({
-          type: "do-replace",
-          replaceExpr: queryExpr.value,
-        });
-        break;
-      }
-      case "prepare-replace-all": {
-        const queryExpr = $replaceExpr;
-        vscode.postMessage({
-          type: "do-replace-all",
-          replaceExpr: queryExpr.value,
-        });
-        break;
-      }
-      case "prepare-replace-files": {
-        const queryExpr = $replaceExpr;
-        vscode.postMessage({
-          type: "do-replace-files",
-          replaceExpr: queryExpr.value,
-        });
-        break;
-      }
-    }
-  });
 
   //
   $searchExpr.value = state.searchExpr ?? "";

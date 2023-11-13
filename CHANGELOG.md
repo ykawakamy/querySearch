@@ -13,6 +13,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
   - [x] replace preview
   - [ ] add replace script editor.
 
+## [0.0.4] - 2023-11-13
+ - replace html-parser.
+ - add jsx/tsx support.
+ - fix replace preview.
 
 ## [0.0.3] - 2023-05-22
  - fix control icons not showing in querypanel view. 

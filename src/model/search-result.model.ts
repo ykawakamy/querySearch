@@ -1,59 +1,78 @@
 import * as vscode from "vscode";
-import { Constants } from "../constants";
-import { QSNode } from "../engine/search-engine";
+import { Constants, ExecuteMode } from "../constants";
+import { QSNode, SearchContext } from "./search-context.model";
 import { htmlUtil } from "../util/html-util";
 import path = require("path");
 export class SerachResult extends vscode.TreeItem {
   items: SerachResultItem[];
   resourceUri: vscode.Uri;
+  version: number;
 
-  constructor(uri: vscode.Uri, items?: QSNode[]) {
-    super(uri);
-    this.description = path.dirname(uri.fsPath);
+  constructor(
+    public document: vscode.TextDocument,
+    items: QSNode[],
+    public searchContext: SearchContext,
+    public executeMode: ExecuteMode
+  ) {
+    super(document.uri);
+    const uri = document.uri;
+    this.version = document.version;
     this.resourceUri = uri;
+    this.description = path.dirname(uri.fsPath);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     this.items =
-      items?.map((v,i) => {
-        return this.toItem(v, i, uri);
+      items?.map((v, i) => {
+        return this.toItem(v, i, document, searchContext, executeMode);
       }) || [];
 
-    this.contextValue = Constants.CONTEXT_VALUE.FILE;
+    this.contextValue = executeMode.file;
   }
 
-  private toItem(v: QSNode, i: number, uri: vscode.Uri) {
+  private toItem(
+    v: QSNode,
+    i: number,
+    document: vscode.TextDocument,
+    searchContext: SearchContext,
+    executeMode: ExecuteMode
+  ) {
     const { startOffset, endOffset } = htmlUtil.getOffsetOfCloseTag(v);
-    const item = new SerachResultItem(uri, v, i, startOffset, endOffset);
+    const item = new SerachResultItem(
+      document,
+      v,
+      i,
+      startOffset,
+      endOffset,
+      searchContext,
+      executeMode
+    );
     item.parent = this;
     return item;
-  }
-
-  filter(op: (val: SerachResultItem, index: number) => boolean) {
-    const filtered = this.items.filter(op).map((v) => v.tag);
-    return new SerachResult(this.resourceUri, filtered);
   }
 }
 
 export class SerachResultItem extends vscode.TreeItem {
-
   parent!: SerachResult;
-
+  isCompleted = false;
   constructor(
-    public resourceUri: vscode.Uri,
+    public document: vscode.TextDocument,
     public tag: QSNode,
     public index: number,
     public startOffset: number,
-    public endOffset: number
+    public endOffset: number,
+    public searchContext: SearchContext,
+    public executeMode: ExecuteMode
   ) {
-    super(resourceUri);
+    super(document.uri);
+    const uri = document.uri;
     this.label = tag.toString();
     this.collapsibleState = vscode.TreeItemCollapsibleState.None;
 
-    this.contextValue = Constants.CONTEXT_VALUE.RESULT;
+    this.contextValue = executeMode.item;
 
     this.command = {
-      command: Constants.COMMAND_QUERYSEARCH_OPENFILE,
+      command: Constants.COMMAND_QUERYSEARCH_PREVIEWFILE,
       title: "Open File",
-      arguments: [resourceUri, startOffset, endOffset, this],
+      arguments: [this],
     };
   }
 }
