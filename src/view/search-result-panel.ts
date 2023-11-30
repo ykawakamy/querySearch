@@ -11,6 +11,7 @@ import { SearchContext } from "../model/search-context.model";
 import { SearchEngine } from "../engine/search-engine";
 import { SerachResult, SerachResultItem } from "../model/search-result.model";
 import { t } from "@vscode/l10n";
+import { ReplacePreviewDocumentProvider } from "./replace-preview";
 
 export class SearchResultPanelProvider
   implements vscode.TreeDataProvider<SerachResult>
@@ -28,7 +29,10 @@ export class SearchResultPanelProvider
     this._onDidChangeTreeData.event;
 
   searchEngines: SearchEngine[];
-  constructor(...searchEngines: SearchEngine[]) {
+  constructor(
+    private previewProvider: ReplacePreviewDocumentProvider,
+    ...searchEngines: SearchEngine[]
+    ) {
     this.searchEngines = searchEngines;
   }
 
@@ -149,8 +153,7 @@ export class SearchResultPanelProvider
         searchEngine.validateSearchContext(searchContext);
       }
     } catch (e) {
-      console.log(t("invalid search expression."), e);
-      await vscode.window.showErrorMessage(t("invalid search expression."));
+      await vscode.window.showErrorMessage(vscode.l10n.t("invalid search expression."));
       return;
     }
 
@@ -162,7 +165,7 @@ export class SearchResultPanelProvider
       },
       async (progress, token) => {
         progress.report({
-          message: t("searching..."),
+          message: vscode.l10n.t("searching..."),
         });
 
         this.clearResult();
@@ -292,13 +295,15 @@ export class SearchResultPanelProvider
         if (searchEngine) {
           await searchEngine.replace(searchResult, searchResult.searchContext.replace!, edit);
         }
+        this.previewProvider.refresh(searchResult.resourceUri, searchResult.searchContext);
       }
     } catch (e: any) {
       await vscode.window.showErrorMessage(
-        t("failed to replace: \n{0}", e?.toString() )
+        vscode.l10n.t("failed to replace: \n{0}", e?.toString() )
       );
       console.log(e, e.stack);
     }
+
   }
 
 

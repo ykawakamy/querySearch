@@ -2,12 +2,12 @@ import * as vscode from "vscode";
 import { Constants, State } from "../constants";
 import { SearchContext } from "../model/search-context.model";
 import { SerachResult, SerachResultItem } from "../model/search-result.model";
+import {
+  ReplacePreviewDocumentProvider
+} from "./replace-preview";
 import { SearchResultPanelProvider } from "./search-result-panel";
 import path = require("path");
-import {
-  ReplacePreviewDocumentProvider,
-  getPreviewUri,
-} from "./replace-preview";
+import { l10n } from "vscode";
 
 export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
   public static readonly viewId = Constants.VIEW_ID_QUERY;
@@ -154,9 +154,6 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
         "codicon.css"
       )
     );
-    const filesToInclude = "files to include";
-    const filesToExclude = "files to exclude";
-
     // Use a nonce to only allow a specific script to be run.
     const nonce = getNonce();
 
@@ -180,7 +177,7 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
           </a>
           <div class="query-container container"> 
             <textarea id="query-expr" rows="1"></textarea>
-            <button id="do-search">Search</button>
+            <button id="do-search">${l10n.t("search")}</button>
             <textarea id="replace-expr" rows="3" 
             placeholder="experimental: ex) $.insertAdjacentHTML('afterend', $.removeChild($.querySelector('div')).outerHTML); $"
             ></textarea>
@@ -190,9 +187,9 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
           <div class="icon"><i class="codicon codicon-kebab-horizontal"></i></div>
         </a>
         <div class="filter-container container" id="filter-container">
-          <label>${filesToInclude}</label>
+          <label>${l10n.t("files to include")}</label>
           <input id="filter-includes">
-          <label>${filesToExclude}</label>
+          <label>${l10n.t("files to exclude")}</label>
           <input id="filter-excludes">
         </div>
 				<script nonce="${nonce}" src="${scriptUri}"></script>

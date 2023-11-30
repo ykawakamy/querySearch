@@ -1,7 +1,7 @@
 {
   "name": "querysearch",
   "displayName": "querySearch",
-  "description": "This extension is search html file by `CSS Selector`.",
+  "description": "%description%",
   "version": "0.0.4",
   "engines": {
     "vscode": "^1.83.0"
@@ -17,49 +17,50 @@
     "onFileSystem:memfs"
   ],
   "main": "./dist/extension.js",
+  "l10n": "./l10n",
   "contributes": {
     "views": {
       "explorer": [
         {
           "type": "webview",
           "id": "querySearch",
-          "name": "QueryPanel"
+          "name": "%QueryPanel%"
         },
         {
           "id": "searchResult",
-          "name": "Search Result"
+          "name": "%SearchResult%"
         }
       ]
     },
     "commands": [
       {
         "command": "querySearch.openFile",
-        "title": "open file",
+        "title": "%openFile%",
         "icon": "$(go-to-file)"
       },
       {
         "command": "querySearch.previewFile",
-        "title": "open file",
+        "title": "%openFile%",
         "icon": "$(go-to-file)"
       },
       {
         "command": "querySearch.replace",
-        "title": "replace",
+        "title": "%replace%",
         "icon": "$(search-replace)"
       },
       {
         "command": "querySearch.replaceAll",
-        "title": "replace in target File",
+        "title": "%replaceAll%",
         "icon": "$(search-replace-all)"
       },
       {
         "command": "querySearch.replaceFiles",
-        "title": "Replace in Files",
+        "title": "%replaceFiles%",
         "icon": "$(search-replace-all)"
       },
       {
         "command": "querySearch.copyResult",
-        "title": "copy result"
+        "title": "%copyResult%"
       }
     ],
     "menus": {
@@ -107,18 +108,19 @@
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "l10n:generate": "npx @vscode/l10n-dev export --outDir ./l10n ./src"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
     "@types/vscode": "^1.83.0",
-    "@typescript-eslint/eslint-plugin": "^5.49.0",
-    "@typescript-eslint/parser": "^5.49.0",
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0",
     "@vscode/l10n-dev": "^0.0.30",
     "@vscode/test-electron": "^2.2.2",
-    "eslint": "^8.33.0",
+    "eslint": "^8.54.0",
     "glob": "^8.1.0",
     "mocha": "^10.1.0",
     "ts-loader": "^9.4.2",

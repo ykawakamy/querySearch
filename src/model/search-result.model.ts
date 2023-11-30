@@ -71,7 +71,7 @@ export class SerachResultItem extends vscode.TreeItem {
 
     this.command = {
       command: Constants.COMMAND_QUERYSEARCH_PREVIEWFILE,
-      title: "Open File",
+      title: vscode.l10n.t("Open File"),
       arguments: [this],
     };
   }

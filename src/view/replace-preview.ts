@@ -6,15 +6,14 @@ import {
   TextDocumentContentProvider,
   Uri,
 } from "vscode";
+
 import { Constants } from "../constants";
 import { SearchEngine } from "../engine/search-engine";
 import { MemFS } from "../engine/inmemory-fsprovider";
 import { ReplaceEditMemFsTextDocument } from "../engine/replace-edit";
 import { SearchContext } from "../model/search-context.model";
 import { SerachResultItem } from "../model/search-result.model";
-import path = require("path");
-import { t } from "@vscode/l10n";
-
+import * as path from 'path';
 export class ReplacePreviewDocumentProvider
   implements TextDocumentContentProvider, Disposable
 {
@@ -31,23 +30,6 @@ export class ReplacePreviewDocumentProvider
       ),
       vscode.workspace.registerFileSystemProvider("memfs", new MemFS, {isReadonly: true})
     );
-    context.subscriptions.push(
-      vscode.workspace.onDidChangeTextDocument((change) => {
-        if(change.contentChanges.length > 0 ){
-          // skip
-          return;
-        }
-        const editors = vscode.window.visibleTextEditors.filter(
-          (editor) => {
-            return editor.document.uri.path === change.document.uri.path 
-              && editor.document.uri.scheme === Constants.SCHEMA_PREVIEW;
-          }
-        );
-        for(const editor of editors) {
-          this._onDidChange.fire(editor.document.uri);
-        }
-      })
-    );
   }
 
   private _onDidChange = new EventEmitter<Uri>();
@@ -59,6 +41,8 @@ export class ReplacePreviewDocumentProvider
     this._onDidChange.dispose();
   }
 
+  lock: Record<string, number> = {};
+  lockNo = 0;
   async provideTextDocumentContent(
     uri: vscode.Uri,
     token: vscode.CancellationToken
@@ -84,8 +68,11 @@ export class ReplacePreviewDocumentProvider
         return "";
       }
       // searchResult.items = searchResult.items.filter(v=>v.index === index);
-      await searchEngine.replace(searchResult, searchContext.replace, edit);
-  
+      try{
+        await searchEngine.replace(searchResult, searchContext.replace, edit);
+      }catch(e){
+        console.log(e);
+      }
       return text.getText();
     }catch(e){
       return "";
@@ -113,20 +100,25 @@ export class ReplacePreviewDocumentProvider
         "vscode.diff",
         item.document.uri,
         preview,
-        t(`{0} ↔ [replaced] (Replace Preview)`, basefile),
+        vscode.l10n.t(`{0} ↔ [replaced] (Replace Preview)`, basefile),
         options
       );
       // this._onDidChange.fire(preview);
     };
   }
+
+  refresh(resourceUri: vscode.Uri, searchContext: SearchContext) {
+    this._onDidChange.fire(getPreviewUri(resourceUri, searchContext));
+  }
+  
 }
 
-export function getPreviewUri(resource: vscode.Uri, searchContext: SearchContext, item: SerachResultItem) {
+function getPreviewUri(resource: vscode.Uri, searchContext: SearchContext, item?: SerachResultItem) {
   return vscode.Uri.from({
     scheme: Constants.SCHEMA_PREVIEW,
     path: resource.path,
     fragment: resource.scheme,
-    query: JSON.stringify({ searchContext, index: item.index }),
+    query: JSON.stringify({ searchContext }),
   });
 }
 

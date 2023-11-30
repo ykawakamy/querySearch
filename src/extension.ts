@@ -10,8 +10,8 @@ export function activate(context: vscode.ExtensionContext) {
     new NodeHtmlParserAdaptor(),
     new JsxHtmlParserAdapter(),
   ];
-  const resultPanel = new SearchResultPanelProvider(...searchEngines);
   const previewProvider = new ReplacePreviewDocumentProvider(...searchEngines);
+  const resultPanel = new SearchResultPanelProvider(previewProvider, ...searchEngines);
   previewProvider.init(context);
   resultPanel.init(context);
   new SearchQueryPanelProvider(context, resultPanel, previewProvider);

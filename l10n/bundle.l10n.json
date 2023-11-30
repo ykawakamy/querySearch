@@ -1,0 +1,11 @@
+{
+  "invalid search expression.": "invalid search expression.",
+  "searching...": "searching...",
+  "failed to replace: \n{0}": "failed to replace: \n{0}",
+  "search": "Search",
+  "files to include": "files to include",
+  "files to exclude": "files to exclude",
+  "{0} ↔ [replaced] (Replace Preview)": "{0} ↔ [replaced] (Replace Preview)",
+  "Open File": "Open File",
+  "cannot applyEdit.": "cannot applyEdit."
+}

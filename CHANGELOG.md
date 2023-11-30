@@ -7,10 +7,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 - [ ] add configuration.
   - [ ] filtering file extensions and languageId.
-- [x] including/excluding target files.
-  - [x] excluding `.gitignore` definition.
 - [ ] improve replace feature. 
-  - [x] replace preview
   - [ ] add replace script editor.
 
 ## [0.0.4] - 2023-11-13

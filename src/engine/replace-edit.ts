@@ -1,4 +1,4 @@
-import { t } from "@vscode/l10n";
+import * as  l10n from "@vscode/l10n";
 import * as vscode from "vscode";
 import { Range } from "vscode";
 
@@ -45,7 +45,7 @@ export class ReplaceEditTextDocument implements ReplaceEdit {
     }
     const result = await vscode.workspace.applyEdit(this.edit);
     if( !result ){
-      throw new Error(t("cannot applyEdit."));
+      throw new Error(vscode.l10n.t("cannot applyEdit."));
     } 
     await this.document.save();
   }
@@ -83,7 +83,7 @@ export class ReplaceEditMemFsTextDocument extends ReplaceEditTextDocument {
     }
     const result = await vscode.workspace.applyEdit(this.edit);
     if( !result ){
-      throw new Error(t("cannot applyEdit."));
+      throw new Error(vscode.l10n.t("cannot applyEdit."));
     } 
   }
 }

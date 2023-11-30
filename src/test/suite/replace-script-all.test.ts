@@ -4,6 +4,7 @@ import { after } from "mocha";
 import * as vscode from "vscode";
 import { SearchResultPanelProvider } from "../../view/search-result-panel";
 import { NodeHtmlParserAdaptor } from "../../engine/node-html-parser";
+import { ReplacePreviewDocumentProvider } from "../../view/replace-preview";
 // import * as myExtension from '../extension';
 
 suite("ReplaceAll Script Test", () => {
@@ -12,7 +13,7 @@ suite("ReplaceAll Script Test", () => {
   let testee: SearchResultPanelProvider;
 
   suiteSetup(async () => {
-    testee = new SearchResultPanelProvider(new class extends NodeHtmlParserAdaptor{
+    testee = new SearchResultPanelProvider(new ReplacePreviewDocumentProvider(), new class extends NodeHtmlParserAdaptor{
 			canApply(uri: vscode.Uri): boolean {
 				return true;
 			}

@@ -1,0 +1,11 @@
+{
+  "description": "This extension is search html file by `CSS Selector`.",
+
+  "QueryPanel": "QueryPanel",
+  "SearchResult": "SearchResult",
+  "copyResult": "copyResult",
+  "openFile": "openFile",
+  "replace": "replace",
+  "replaceAll": "replaceAll",
+  "replaceFiles": "replaceFiles"
+}
