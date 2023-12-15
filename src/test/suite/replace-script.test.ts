@@ -2,11 +2,9 @@ import assert = require("assert");
 import { after } from "mocha";
 
 import * as vscode from "vscode";
-import { SearchResultPanelProvider } from "../../view/search-result-panel";
-import { SearchContext } from "../../engine/search-engine";
 import { NodeHtmlParserAdaptor } from "../../engine/node-html-parser";
-import { ReplaceDocument, ReplaceEditInMemory } from "../../engine/replace-edit";
-// import * as myExtension from '../extension';
+import { SearchResultPanelProvider } from "../../view/search-result-panel";
+import { ReplacePreviewDocumentProvider } from "../../view/replace-preview";
 
 suite("Replace Script Test", () => {
   after(() => {});
@@ -14,18 +12,23 @@ suite("Replace Script Test", () => {
 	let testee: SearchResultPanelProvider;
 
   suiteSetup(async () => {
-    testee = new SearchResultPanelProvider(new NodeHtmlParserAdaptor());
+    testee = new SearchResultPanelProvider(new ReplacePreviewDocumentProvider(), new class extends NodeHtmlParserAdaptor{
+			canApply(uri: vscode.Uri): boolean {
+				return true;
+			}
+		});
   });
 
   async function assertReplace(
-    document: ReplaceDocument,
+    document: vscode.TextDocument,
     search: string,
     replace: string,
     expected: unknown
   ) {
 		const searchContext = {search, replace};
-    const result = await testee.searchEngine.search(document, searchContext );
-		await testee.replace(result!.items[0], replace);
+		const result = new NodeHtmlParserAdaptor().search(document, searchContext );
+
+		await testee.replace(result!.items[0]);
     assert.equal(document.getText(), expected);
   }
 
@@ -33,19 +36,19 @@ suite("Replace Script Test", () => {
     const document = await vscode.workspace.openTextDocument({
       content: "<ul><li>file</li></ul>",
     });
-    const queryExpr = "ul:has(li)";
+    const searchContext = "ul:has(li)";
     const replaceExpr = `
 		`;
     const expected = "<ul><li>file</li></ul>";
 
-    await assertReplace(document, queryExpr, replaceExpr, expected);
+    await assertReplace(document, searchContext, replaceExpr, expected);
   });
 
   test("remove and insert to AfterEnd", async () => {
     const document = await vscode.workspace.openTextDocument({
       content: "<ul><li>file</li></ul>",
     });
-    const queryExpr = "ul:has(li)";
+    const searchContext = "ul:has(li)";
     const replaceExpr = `
 			var s = $.querySelector("li");
 			$.removeChild(s);
@@ -53,7 +56,7 @@ suite("Replace Script Test", () => {
 		`;
     const expected = "<ul></ul><li>file</li>";
 
-    await assertReplace(document, queryExpr, replaceExpr, expected);
+    await assertReplace(document, searchContext, replaceExpr, expected);
   });
 
   test("remove and insert to AfterEnd, multiline", async () => {
@@ -64,7 +67,7 @@ suite("Replace Script Test", () => {
 		</ul>
 		`,
     });
-    const queryExpr = "ul:has(li)";
+    const searchContext = "ul:has(li)";
     const replaceExpr = `
 			var s = $.querySelector("li");
 			$.removeChild(s);
@@ -76,7 +79,7 @@ suite("Replace Script Test", () => {
 		</ul><li>file</li>
 		`;
 
-    await assertReplace(document, queryExpr, replaceExpr, expected);
+    await assertReplace(document, searchContext, replaceExpr, expected);
   });
 
   // TODO self closing/empty tag become decomposite by parser.
@@ -89,7 +92,7 @@ suite("Replace Script Test", () => {
 		</ul>
 		`,
     });
-    const queryExpr = "ul:has(li)";
+    const searchContext = "ul:has(li)";
     const replaceExpr = `
 			var s = $.querySelector("li");
 			$.removeChild(s);
@@ -102,7 +105,7 @@ suite("Replace Script Test", () => {
 		</ul><li />
 		`;
 
-    await assertReplace(document, queryExpr, replaceExpr, expected);
+    await assertReplace(document, searchContext, replaceExpr, expected);
   });
 
   // TODO self closing/empty tag become decomposite by parser.
@@ -114,7 +117,7 @@ suite("Replace Script Test", () => {
 		</ul>
 		`,
     });
-    const queryExpr = "ul:has(li)";
+    const searchContext = "ul:has(li)";
     const replaceExpr = `
 			var s = $.querySelector("li");
 			$.removeChild(s);
@@ -126,7 +129,7 @@ suite("Replace Script Test", () => {
 		</ul><li b="1" a="2"></li>
 		`;
 
-    await assertReplace(document, queryExpr, replaceExpr, expected);
+    await assertReplace(document, searchContext, replaceExpr, expected);
   });
 
   test("modify attributes", async () => {
@@ -137,7 +140,7 @@ suite("Replace Script Test", () => {
 		</ul>
 		`,
     });
-    const queryExpr = "ul:has(li)";
+    const searchContext = "ul:has(li)";
     const replaceExpr = `
 			$.setAttribute("appendttr", "APPENDED");
 			$.setAttribute("modifyAttr", "NEW_VALUE");
@@ -149,7 +152,7 @@ suite("Replace Script Test", () => {
 		</ul>
 		`;
 
-    await assertReplace(document, queryExpr, replaceExpr, expected);
+    await assertReplace(document, searchContext, replaceExpr, expected);
   });
 
   test("preserve comment block", async () => {
@@ -164,7 +167,7 @@ suite("Replace Script Test", () => {
 		</ul>
 		`,
     });
-    const queryExpr = "ul:has(li)";
+    const searchContext = "ul:has(li)";
     const replaceExpr = `
 		var s = $.querySelector("li");
 		$.removeChild(s);
@@ -180,7 +183,7 @@ suite("Replace Script Test", () => {
 		</ul><li><!-- second --></li>
 		`;
 
-    await assertReplace(document, queryExpr, replaceExpr, expected);
+    await assertReplace(document, searchContext, replaceExpr, expected);
   });
 
   test("preserve multiline attribute", async () => {
@@ -194,7 +197,7 @@ suite("Replace Script Test", () => {
 		</ul>
 		`,
     });
-    const queryExpr = "ul:has(li)";
+    const searchContext = "ul:has(li)";
     const replaceExpr = `
 		var s = $.querySelector("li");
 		$.removeChild(s);
@@ -202,15 +205,14 @@ suite("Replace Script Test", () => {
 		`;
     const expected = `
 		<ul>
-
+		
 		</ul><li onclick='
 			console.log("one");
 			console.log("two");
 		'></li>
-
 		`;
 
-    await assertReplace(document, queryExpr, replaceExpr, expected);
+    await assertReplace(document, searchContext, replaceExpr, expected);
   });
 
   test("preserve multiline attribute", async () => {
@@ -224,7 +226,7 @@ suite("Replace Script Test", () => {
 		</ul>
 		`,
     });
-    const queryExpr = "ul:has(li)" ;
+    const searchContext = "ul:has(li)" ;
     const replaceExpr = `
 		$.setAttribute("replaced", "")
 		`;
@@ -237,7 +239,7 @@ suite("Replace Script Test", () => {
 		</ul>
 		`;
 
-    await assertReplace(document, queryExpr, replaceExpr, expected);
+    await assertReplace(document, searchContext, replaceExpr, expected);
   });
 
 	test("nested", async () => {
@@ -258,7 +260,7 @@ suite("Replace Script Test", () => {
 		</ul>
 		`,
 		});
-		const queryExpr = "ul:has(li)";
+		const searchContext = "ul:has(li)";
 		const replaceExpr = `
 			var s = $.querySelector("li");
 			$.removeChild(s);
@@ -278,6 +280,6 @@ suite("Replace Script Test", () => {
 		</ul>
 		`;
 
-		await assertReplace(document, queryExpr, replaceExpr, expected);
+		await assertReplace(document, searchContext, replaceExpr, expected);
 	});
 });

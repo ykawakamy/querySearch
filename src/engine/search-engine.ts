@@ -1,84 +1,74 @@
-import * as HTMLParser from "node-html-parser";
-import {
-  ReplaceDocument,
-  ReplaceEdit,
-  ReplaceEditTextDocument,
-} from "./replace-edit";
-import { NodeHtmlParserAdaptor } from "./node-html-parser";
-import { SerachResult, SerachResultItem } from "../model/search-result.model";
 import * as vm from "vm";
 import * as vscode from "vscode";
+import { SerachResult, SerachResultItem } from "../model/search-result.model";
+import {
+  ReplaceEdit
+} from "./replace-edit";
+import { ExecuteModes } from "../constants";
+import { QSNode, SearchContext } from "../model/search-context.model";
 
-export type Node = HTMLParser.HTMLElement | HTMLParser.Node;
 
 export abstract class SearchEngine {
-  abstract validateSearchContext(queryExpr: SearchContext): boolean;
+  abstract canApply(uri: vscode.Uri): boolean;
+  abstract validateSearchContext(searchContext: SearchContext): boolean;
   protected abstract searchHtml(
     content: string,
-    queryExpr: SearchContext
-  ): Node[];
-  abstract getReplacedText(node: Node): string;
+    searchContext: SearchContext
+  ): QSNode[];
+  abstract getReplacedText(node: QSNode): string;
 
   search(
-    content$: ReplaceDocument,
-    queryExpr: SearchContext
+    content$: vscode.TextDocument,
+    searchContext: SearchContext
   ): SerachResult | null {
     const content = content$.getText();
-    const result = this.searchHtml(content, queryExpr);
+    const result = this.searchHtml(content, searchContext);
     if (result?.length > 0) {
-      const r = new SerachResult(content$.uri, result);
+      const executeMode = searchContext.replaceToggle ? ExecuteModes.replace : ExecuteModes.search;
+      const r = new SerachResult(content$, result, searchContext, executeMode);
       return r;
     }
     return null;
   }
 
   async replace(
-    searchResults: SerachResult[],
+    searchResult: SerachResult,
     replaceExpr: string,
     edit: ReplaceEdit
   ) {
-    try {
-      for (const searchResult of searchResults) {
-        const uri = searchResult.resourceUri!;
-        const document = await edit.openTextDocument(uri!);
-        for (const item of searchResult.items) {
-          await this._replaceItem(item, document, replaceExpr, edit);
-        }
-      }
-
-      await edit.applyEdit();
-    } catch (e: any) {
-      await vscode.window.showErrorMessage(
-        "failed to replace: \n" + e?.toString()
-      );
-      console.log(e, e.stack);
+    const uri = searchResult.resourceUri!;
+    const document = await edit.openTextDocument(uri!);
+    if (document.version !== searchResult.version ){
+      return;
     }
+    for (const item of searchResult.items) {
+      await this._replaceItem(item, document, replaceExpr, edit);
+    }
+
+    await edit.applyEdit();
   }
 
   private async _replaceItem(
     item: SerachResultItem,
-    document: ReplaceDocument,
+    document: vscode.TextDocument,
     replaceExpr: string,
     edit: ReplaceEdit
   ) {
     const baseTag = item.tag;
 
-    const $ = baseTag.clone();
+    const $ = this.createClone(baseTag);
+    const original = this.getReplacedText($);
     const vmContext = { $: $ };
     vm.createContext(vmContext);
     const result = vm.runInContext(replaceExpr, vmContext, {
       timeout: 1000,
     });
-
-    await edit.replace(document.uri, baseTag.range, this.getReplacedText($));
+    const modified = this.getReplacedText($);
+    if (original !== modified) {
+      await edit.replace(document.uri, this.getRange(baseTag), modified);
+    }
   }
-}
+  abstract createClone(v: QSNode): QSNode;
 
-export type SearchContext = {
-  search: string;
-  replace?: string;
-  replaceToggle?: boolean;
-  filterToggle?: boolean;
-  includes?: string;
-  excludes?: string;
-};
+  abstract getRange(baseTag: QSNode): readonly [number, number];
+}

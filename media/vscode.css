@@ -102,3 +102,11 @@ input::placeholder,
 textarea::placeholder {
 	color: var(--vscode-input-placeholderForeground);
 }
+
+#query-expr {
+	min-height: 2rem;
+}
+
+#replace-expr {
+	min-height: 3rem;
+}

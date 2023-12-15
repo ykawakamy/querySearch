@@ -1,0 +1,11 @@
+{
+  "invalid search expression.": "CSSセレクタが正しくありません。",
+  "searching...": "検索中...",
+  "failed to replace: \n{0}": "置換に失敗しました: \n{0}",
+  "search": "検索",
+  "files to include": "含めるファイル",
+  "files to exclude": "除外するファイル",
+  "{0} ↔ [replaced] (Replace Preview)": "{0} ↔ [置換後] (置換プレビュー)",
+  "Open File": "ファイルを開く",
+  "cannot applyEdit.": "置換に失敗しました。."
+}

@@ -1,69 +1,78 @@
-import { HTMLElement } from "node-html-parser";
 import * as vscode from "vscode";
-import { Constants } from "../constants";
-import * as HTMLParser from "node-html-parser";
-import * as vm from "vm";
-import { Utils } from "vscode-uri";
+import { Constants, ExecuteMode } from "../constants";
+import { QSNode, SearchContext } from "./search-context.model";
 import { htmlUtil } from "../util/html-util";
-import { Node } from "../engine/search-engine";
 import path = require("path");
 export class SerachResult extends vscode.TreeItem {
   items: SerachResultItem[];
   resourceUri: vscode.Uri;
+  version: number;
 
-  constructor(uri: vscode.Uri, items?: Node[]) {
-    super(uri);
-    this.description = path.dirname(uri.fsPath);
+  constructor(
+    public document: vscode.TextDocument,
+    items: QSNode[],
+    public searchContext: SearchContext,
+    public executeMode: ExecuteMode
+  ) {
+    super(document.uri);
+    const uri = document.uri;
+    this.version = document.version;
     this.resourceUri = uri;
+    this.description = path.dirname(uri.fsPath);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     this.items =
-      items?.map((v) => {
-        return this.toItem(v, uri);
+      items?.map((v, i) => {
+        return this.toItem(v, i, document, searchContext, executeMode);
       }) || [];
 
-    this.contextValue = Constants.CONTEXT_VALUE.FILE;
+    this.contextValue = executeMode.file;
   }
 
-  private toItem(v: Node, uri: vscode.Uri) {
+  private toItem(
+    v: QSNode,
+    i: number,
+    document: vscode.TextDocument,
+    searchContext: SearchContext,
+    executeMode: ExecuteMode
+  ) {
     const { startOffset, endOffset } = htmlUtil.getOffsetOfCloseTag(v);
-    const item = new SerachResultItem(uri, v, startOffset, endOffset);
+    const item = new SerachResultItem(
+      document,
+      v,
+      i,
+      startOffset,
+      endOffset,
+      searchContext,
+      executeMode
+    );
     item.parent = this;
     return item;
-  }
-
-  filter(op: (val: SerachResultItem, index: number) => boolean) {
-    const filtered = this.items.filter(op).map((v) => v.tag);
-    return new SerachResult(this.resourceUri, filtered);
   }
 }
 
 export class SerachResultItem extends vscode.TreeItem {
-  tag: Node;
-  startOffset: number;
-  endOffset: number;
   parent!: SerachResult;
-  resourceUri: vscode.Uri;
-
+  isCompleted = false;
   constructor(
-    uri: vscode.Uri,
-    tag: Node,
-    startOffset: number,
-    endOffset: number
+    public document: vscode.TextDocument,
+    public tag: QSNode,
+    public index: number,
+    public startOffset: number,
+    public endOffset: number,
+    public searchContext: SearchContext,
+    public executeMode: ExecuteMode
   ) {
-    super(uri);
-    this.resourceUri = uri;
+    super(document.uri);
+    const uri = document.uri;
     this.label = tag.toString();
     this.collapsibleState = vscode.TreeItemCollapsibleState.None;
-    this.tag = tag;
-    this.startOffset = startOffset;
-    this.endOffset = endOffset;
 
-    this.contextValue = Constants.CONTEXT_VALUE.RESULT;
+    this.contextValue = executeMode.item;
 
     this.command = {
-      command: Constants.COMMAND_QUERYSEARCH_OPENFILE,
-      title: "Open File",
-      arguments: [uri, startOffset, endOffset],
+      command: Constants.COMMAND_QUERYSEARCH_PREVIEWFILE,
+      title: vscode.l10n.t("Open File"),
+      arguments: [this],
     };
   }
 }

@@ -7,12 +7,14 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 - [ ] add configuration.
   - [ ] filtering file extensions and languageId.
-- [x] including/excluding target files.
-  - [x] excluding `.gitignore` definition.
 - [ ] improve replace feature. 
-  - [x] replace preview
   - [ ] add replace script editor.
 
+## [0.0.4] - 2023-12-16
+ - add icon.
+ - add jsx/tsx support.
+ - fix replace preview.
+ - change html-parser library.
 
 ## [0.0.3] - 2023-05-22
  - fix control icons not showing in querypanel view. 
