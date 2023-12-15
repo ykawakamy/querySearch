@@ -1,6 +1,4 @@
-import { PHtmlDocument } from "html-parser/dist/model/PHtml";
-import { PHtmlElement } from "html-parser/dist/model/PHtmlElement";
-import { PHtmlNode } from "html-parser/dist/model/PHtmlNode";
+import { PHtmlElement,PHtmlNode,PHtmlDocument } from 'html-parser';
 import { QSNode } from "../model/search-context.model";
 
 export namespace htmlUtil {

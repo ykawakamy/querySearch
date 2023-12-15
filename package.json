@@ -18,6 +18,7 @@
   ],
   "main": "./dist/extension.js",
   "l10n": "./l10n",
+  "icon":"icon.png",
   "contributes": {
     "views": {
       "explorer": [
