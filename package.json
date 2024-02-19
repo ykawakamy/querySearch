@@ -18,7 +18,7 @@
   ],
   "main": "./dist/extension.js",
   "l10n": "./l10n",
-  "icon":"icon.png",
+  "icon": "icon.png",
   "contributes": {
     "views": {
       "explorer": [
@@ -114,6 +114,7 @@
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
+    "@types/jest": "^29.5.12",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
     "@types/vscode": "^1.83.0",
@@ -124,6 +125,7 @@
     "eslint": "^8.54.0",
     "glob": "^8.1.0",
     "mocha": "^10.1.0",
+    "ts-jest": "^29.1.2",
     "ts-loader": "^9.4.2",
     "typescript": "^4.9.4",
     "vsce": "^2.15.0",
