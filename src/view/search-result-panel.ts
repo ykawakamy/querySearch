@@ -298,10 +298,10 @@ export class SearchResultPanelProvider
         this.previewProvider.refresh(searchResult.resourceUri, searchResult.searchContext);
       }
     } catch (e: any) {
-      await vscode.window.showErrorMessage(
+      void vscode.window.showErrorMessage(
         vscode.l10n.t("failed to replace: \n{0}", e?.toString() )
       );
-      console.log(e, e.stack);
+      throw e;
     }
 
   }

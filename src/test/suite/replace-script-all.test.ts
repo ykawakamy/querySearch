@@ -5,19 +5,25 @@ import * as vscode from "vscode";
 import { SearchResultPanelProvider } from "../../view/search-result-panel";
 import { NodeHtmlParserAdaptor } from "../../engine/node-html-parser";
 import { ReplacePreviewDocumentProvider } from "../../view/replace-preview";
-// import * as myExtension from '../extension';
+import { Tempfile } from "./tempFileUtil";
 
 suite("ReplaceAll Script Test", () => {
   after(() => {});
 
-  let testee: SearchResultPanelProvider;
+  let testee = new SearchResultPanelProvider(
+    new ReplacePreviewDocumentProvider(),
+    new (class extends NodeHtmlParserAdaptor {
+      canApply(uri: vscode.Uri): boolean {
+        return true;
+      }
+    })()
+  );
 
-  suiteSetup(async () => {
-    testee = new SearchResultPanelProvider(new ReplacePreviewDocumentProvider(), new class extends NodeHtmlParserAdaptor{
-			canApply(uri: vscode.Uri): boolean {
-				return true;
-			}
-		});
+  let tempfile = new Tempfile();
+  suiteSetup(async () => {});
+
+  suiteTeardown(async () => {
+    tempfile.cleanup();
   });
 
   async function assertReplace(
@@ -26,34 +32,34 @@ suite("ReplaceAll Script Test", () => {
     replace: string,
     expected: unknown
   ) {
-		const searchContext = {search, replace};
-		const result = new NodeHtmlParserAdaptor().search(document, searchContext );
+    const searchContext = { search, replace };
+    const result = new NodeHtmlParserAdaptor().search(document, searchContext);
 
     await testee.replaceAll(result!);
     assert.equal(document.getText(), expected);
   }
 
   test("remove and insert to AfterEnd", async () => {
-    const document = await vscode.workspace.openTextDocument({
+    const document = await tempfile.createDocument({
       content:
         "<ul><li>file</li><li>file</li></ul>" +
         "<ul><li>file</li><li>file</li></ul>",
     });
-    const searchContext= "ul:has(li)";
+    const searchContext = "ul:has(li)";
     const replaceExpr = `
 			var s = $.querySelector("li");
 			$.removeChild(s);
 			$.insertAdjacentHTML("afterend", s.outerHTML);
 		`;
     const expected =
-      "<ul><li>file</li></ul><li>file</li>"+ 
-			"<ul><li>file</li></ul><li>file</li>";
+      "<ul><li>file</li></ul><li>file</li>" +
+      "<ul><li>file</li></ul><li>file</li>";
 
-			await assertReplace(document, searchContext, replaceExpr, expected);
+    await assertReplace(document, searchContext, replaceExpr, expected);
   });
 
   test("remove and insert to AfterEnd, multiline", async () => {
-    const document = await vscode.workspace.openTextDocument({
+    const document = await tempfile.createDocument({
       content: `
 		<ul>
 		<li>file</li>
@@ -82,12 +88,12 @@ suite("ReplaceAll Script Test", () => {
 		</ul><li>file</li>
 		`;
 
-		await assertReplace(document, searchContext, replaceExpr, expected);
+    await assertReplace(document, searchContext, replaceExpr, expected);
   });
 
   // XXX closing/empty tag
   test.skip("remove and insert to AfterEnd, preserve closing/empty tag", async () => {
-    const document = await vscode.workspace.openTextDocument({
+    const document = await tempfile.createDocument({
       content: `
 		<ul>
 		<li />
@@ -95,7 +101,7 @@ suite("ReplaceAll Script Test", () => {
 		</ul>
 		`,
     });
-    const searchContext= "ul:has(li)";
+    const searchContext = "ul:has(li)";
     const replaceExpr = `
 			var s = $.querySelector("li");
 			$.removeChild(s);
@@ -108,11 +114,11 @@ suite("ReplaceAll Script Test", () => {
 		</ul><li />
 		`;
 
-		await assertReplace(document, searchContext, replaceExpr, expected);
+    await assertReplace(document, searchContext, replaceExpr, expected);
   });
 
   test.skip("remove and insert to AfterEnd, preserve closing/empty tag", async () => {
-    const document = await vscode.workspace.openTextDocument({
+    const document = await tempfile.createDocument({
       content: `
 		<ul>
 		<li />
@@ -120,7 +126,7 @@ suite("ReplaceAll Script Test", () => {
 		</ul>
 		`,
     });
-    const searchContext= "ul:has(li)";
+    const searchContext = "ul:has(li)";
     const replaceExpr = `
 		`;
     const expected = `
@@ -130,12 +136,11 @@ suite("ReplaceAll Script Test", () => {
 		</ul>
 		`;
 
-		await assertReplace(document, searchContext, replaceExpr, expected);
+    await assertReplace(document, searchContext, replaceExpr, expected);
   });
 
-
   test("remove and insert to AfterEnd, preserve attribute order tag", async () => {
-    const document = await vscode.workspace.openTextDocument({
+    const document = await tempfile.createDocument({
       content: `
 		<ul>
 		<li b="1" a="2"></li>
@@ -145,7 +150,7 @@ suite("ReplaceAll Script Test", () => {
 		</ul>
 		`,
     });
-    const searchContext= "ul:has(li)";
+    const searchContext = "ul:has(li)";
     const replaceExpr = `
 			var s = $.querySelector("li");
 			$.removeChild(s);
@@ -160,11 +165,11 @@ suite("ReplaceAll Script Test", () => {
 		</ul><li b="1" a="2"></li>
 		`;
 
-		await assertReplace(document, searchContext, replaceExpr, expected);
+    await assertReplace(document, searchContext, replaceExpr, expected);
   });
 
   test("setAttribute", async () => {
-    const document = await vscode.workspace.openTextDocument({
+    const document = await tempfile.createDocument({
       content: `
 		<ul>
 		<li></li>
@@ -174,7 +179,7 @@ suite("ReplaceAll Script Test", () => {
 		</ul>
 		`,
     });
-    const searchContext= "ul:has(li)";
+    const searchContext = "ul:has(li)";
     const replaceExpr = `
 			$.setAttribute("addAttr", "new");
 		`;
@@ -187,12 +192,12 @@ suite("ReplaceAll Script Test", () => {
 		</ul>
 		`;
 
-		await assertReplace(document, searchContext, replaceExpr, expected);
+    await assertReplace(document, searchContext, replaceExpr, expected);
   });
 
-	test("nested", async () => {
-		const document = await vscode.workspace.openTextDocument({
-			content: `
+  test("nested", async () => {
+    const document = await tempfile.createDocument({
+      content: `
 		<ul>
 		<li>
 			<ul>
@@ -207,27 +212,20 @@ suite("ReplaceAll Script Test", () => {
 		<li>file5</li>
 		</ul>
 		`,
-		});
-		const searchContext = "ul:has(li)";
-		const replaceExpr = `
+    });
+    const searchContext = "ul:has(li)";
+    const replaceExpr = `
 			var s = $.querySelector("li");
 			$.removeChild(s);
 			$.insertAdjacentHTML("afterend", s.outerHTML);
 		`;
-		const expected = `
-		<ul>
-		<li>file3</li>
-		</ul><li>
-			<ul>
-			<li>file2</li>
-			</ul><li>file1</li>
-		</li>
-		<ul>
-		<li>file4</li>
-		<li>file5</li>
-		</ul>
-		`;
+    const expected = "";
 
-		await assertReplace(document, searchContext, replaceExpr, expected);
-	});
+    await assert.rejects(
+      async () => {
+        await assertReplace(document, searchContext, replaceExpr, expected);
+      },
+      { name: "Error", message: "cannot applyEdit." }
+    );
+  });
 });

@@ -1,5 +1,3 @@
-import { Context } from "mocha";
-
 export namespace Constants {
   export const COMMAND_QUERYSEARCH_OPENFILE = "querySearch.openFile";
   export const COMMAND_QUERYSEARCH_PREVIEWFILE = "querySearch.previewFile";

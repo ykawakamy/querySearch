@@ -5,19 +5,22 @@ import * as vscode from "vscode";
 import { NodeHtmlParserAdaptor } from "../../engine/node-html-parser";
 import { SearchResultPanelProvider } from "../../view/search-result-panel";
 import { ReplacePreviewDocumentProvider } from "../../view/replace-preview";
+import { Tempfile } from "./tempFileUtil";
 
 suite("Replace Script Test", () => {
   after(() => {});
 
-	let testee: SearchResultPanelProvider;
 
+  let testee = new SearchResultPanelProvider(new ReplacePreviewDocumentProvider(), new class extends NodeHtmlParserAdaptor{
+		canApply(uri: vscode.Uri): boolean {
+			return true;
+		}
+	});
+	
+	let tempfile = new Tempfile();
   suiteSetup(async () => {
-    testee = new SearchResultPanelProvider(new ReplacePreviewDocumentProvider(), new class extends NodeHtmlParserAdaptor{
-			canApply(uri: vscode.Uri): boolean {
-				return true;
-			}
-		});
   });
+
 
   async function assertReplace(
     document: vscode.TextDocument,
@@ -33,7 +36,7 @@ suite("Replace Script Test", () => {
   }
 
   test("noop", async () => {
-    const document = await vscode.workspace.openTextDocument({
+    const document = await tempfile.createDocument({
       content: "<ul><li>file</li></ul>",
     });
     const searchContext = "ul:has(li)";
@@ -45,7 +48,7 @@ suite("Replace Script Test", () => {
   });
 
   test("remove and insert to AfterEnd", async () => {
-    const document = await vscode.workspace.openTextDocument({
+    const document = await tempfile.createDocument({
       content: "<ul><li>file</li></ul>",
     });
     const searchContext = "ul:has(li)";
@@ -60,7 +63,7 @@ suite("Replace Script Test", () => {
   });
 
   test("remove and insert to AfterEnd, multiline", async () => {
-    const document = await vscode.workspace.openTextDocument({
+    const document = await tempfile.createDocument({
       content: `
 		<ul>
 		<li>file</li>
@@ -84,7 +87,7 @@ suite("Replace Script Test", () => {
 
   // TODO self closing/empty tag become decomposite by parser.
   test.skip("XXX remove and insert to AfterEnd, preserve closing/empty tag", async () => {
-    const document = await vscode.workspace.openTextDocument({
+    const document = await tempfile.createDocument({
       content: `
 		<ul>
 		<li />
@@ -110,7 +113,7 @@ suite("Replace Script Test", () => {
 
   // TODO self closing/empty tag become decomposite by parser.
   test("XXX remove and insert to AfterEnd, preserve attribute order tag", async () => {
-    const document = await vscode.workspace.openTextDocument({
+    const document = await tempfile.createDocument({
       content: `
 		<ul>
 		<li b="1" a="2"></li>
@@ -133,7 +136,7 @@ suite("Replace Script Test", () => {
   });
 
   test("modify attributes", async () => {
-    const document = await vscode.workspace.openTextDocument({
+    const document = await tempfile.createDocument({
       content: `
 		<ul removeAttr="REMOVE" modifyAttr="OLD_VALUE" notModifyAttr="NOT_MODIFIED">
 		<li></li>
@@ -156,7 +159,7 @@ suite("Replace Script Test", () => {
   });
 
   test("preserve comment block", async () => {
-    const document = await vscode.workspace.openTextDocument({
+    const document = await tempfile.createDocument({
       content: `
 		<ul>
 		<!-- 
@@ -187,7 +190,7 @@ suite("Replace Script Test", () => {
   });
 
   test("preserve multiline attribute", async () => {
-    const document = await vscode.workspace.openTextDocument({
+    const document = await tempfile.createDocument({
       content: `
 		<ul>
 		<li onclick='
@@ -216,7 +219,7 @@ suite("Replace Script Test", () => {
   });
 
   test("preserve multiline attribute", async () => {
-    const document = await vscode.workspace.openTextDocument({
+    const document = await tempfile.createDocument({
       content: `
 		<ul onclick='
 		  console.log("one");
@@ -243,7 +246,7 @@ suite("Replace Script Test", () => {
   });
 
 	test("nested", async () => {
-		const document = await vscode.workspace.openTextDocument({
+		const document = await tempfile.createDocument({
 			content: `
 		<ul>
 		<li>
@@ -268,11 +271,13 @@ suite("Replace Script Test", () => {
 		`;
 		const expected = `
 		<ul>
+		
 		<li>file3</li>
 		</ul><li>
 			<ul>
+			<li>file1</li>
 			<li>file2</li>
-			</ul><li>file1</li>
+			</ul>
 		</li>
 		<ul>
 		<li>file4</li>

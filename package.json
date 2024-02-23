@@ -2,7 +2,7 @@
   "name": "querysearch",
   "displayName": "querySearch",
   "description": "%description%",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "engines": {
     "vscode": "^1.83.0"
   },
@@ -109,12 +109,11 @@
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js",
+    "test": "node --enable-source-maps ./out/test/runTest.js",
     "l10n:generate": "npx @vscode/l10n-dev export --outDir ./l10n ./src"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
-    "@types/jest": "^29.5.12",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
     "@types/vscode": "^1.83.0",
@@ -125,7 +124,6 @@
     "eslint": "^8.54.0",
     "glob": "^8.1.0",
     "mocha": "^10.1.0",
-    "ts-jest": "^29.1.2",
     "ts-loader": "^9.4.2",
     "typescript": "^4.9.4",
     "vsce": "^2.15.0",
@@ -135,6 +133,7 @@
   "dependencies": {
     "@vscode/codicons": "^0.0.33",
     "@vscode/l10n": "^0.0.16",
+    "@vscode/webview-ui-toolkit": "^1.4.0",
     "html-parser": "file:../html-parser",
     "ignore": "^5.2.4",
     "vscode-uri": "^3.0.7"
