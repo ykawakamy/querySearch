@@ -41,8 +41,6 @@ export class ReplacePreviewDocumentProvider
     this._onDidChange.dispose();
   }
 
-  lock: Record<string, number> = {};
-  lockNo = 0;
   async provideTextDocumentContent(
     uri: vscode.Uri,
     token: vscode.CancellationToken
@@ -103,7 +101,6 @@ export class ReplacePreviewDocumentProvider
         vscode.l10n.t(`{0} ↔ [replaced] (Replace Preview)`, basefile),
         options
       );
-      // this._onDidChange.fire(preview);
     };
   }
 

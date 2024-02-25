@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { Constants, State } from "../constants";
-import { SearchContext } from "../model/search-context.model";
+import { SearchContext, defaultSearchContext } from "../model/search-context.model";
 import { SerachResult, SerachResultItem } from "../model/search-result.model";
 import {
   ReplacePreviewDocumentProvider
@@ -8,18 +8,17 @@ import {
 import { SearchResultPanelProvider } from "./search-result-panel";
 import path = require("path");
 import { l10n } from "vscode";
+import { WebViewEvent } from "../model/webview-event";
 
 export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
   public static readonly viewId = Constants.VIEW_ID_QUERY;
 
-  private _view?: vscode.WebviewView;
   private _extensionUri;
-  private _target?: SerachResultItem | SerachResult;
-  _searchContext!: SearchContext;
+  private _searchContext!: SearchContext;
+
   set searchContext(v: SearchContext) {
     this._searchContext = v;
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    this._context?.workspaceState.update(State.latestQuery, this.searchContext);
+    void this._context?.workspaceState.update(State.latestQuery, this.searchContext);
   }
   get searchContext(): SearchContext {
     return this._searchContext;
@@ -32,19 +31,12 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
   ) {
     this._extensionUri = _context.extensionUri;
 
-    this._searchContext = _context.workspaceState.get(State.latestQuery, {
-      search: "",
-    });
+    this.searchContext = _context.workspaceState.get(State.latestQuery, defaultSearchContext);
 
     _context.subscriptions.push(
       vscode.window.registerWebviewViewProvider(
         SearchQueryPanelProvider.viewId,
         this,
-        {
-          webviewOptions: {
-            // retainContextWhenHidden: true,
-          },
-        }
       ),
       vscode.commands.registerCommand(
         Constants.COMMAND_QUERYSEARCH_OPENFILE,
@@ -79,8 +71,6 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
     context: vscode.WebviewViewResolveContext,
     _token: vscode.CancellationToken
   ) {
-    this._view = webviewView;
-
     webviewView.webview.options = {
       // Allow scripts in the webview
       enableScripts: true,
@@ -92,38 +82,20 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
       context.state
     );
 
-    webviewView.webview.onDidReceiveMessage((data: any) => {
+    webviewView.webview.onDidReceiveMessage((data: WebViewEvent) => {
       switch (data.type) {
         case "do-search": {
           this.searchContext = {
-            ...this.searchContext,
-            search: data.searchContext,
-            includes: data.filterIncludes,
-            excludes: data.filterExcludes,
+            ...data
           };
 
           void this.resultPanel.searchWorkspace(this.searchContext);
           break;
         }
-        case "change-replace": {
+        case "patch-search-context": {
           this.searchContext = {
             ...this.searchContext,
-            replace: data.replaceExpr,
-          };
-
-          break;
-        }
-        case "query-replace-toggle": {
-          this.searchContext = {
-            ...this.searchContext,
-            replaceToggle: data.hidden,
-          };
-          break;
-        }
-        case "filter-toggle": {
-          this.searchContext = {
-            ...this.searchContext,
-            filterToggle: data.hidden,
+            ...data
           };
           break;
         }
@@ -134,7 +106,7 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
   private _getHtmlForWebview(webview: vscode.Webview, state: any) {
     // Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
     const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, "media", "main.js")
+      vscode.Uri.joinPath(this._extensionUri, "webview-ui", "build", "assets" ,"index.js")
     );
     const styleResetUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, "media", "reset.css")
@@ -143,7 +115,7 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
       vscode.Uri.joinPath(this._extensionUri, "media", "vscode.css")
     );
     const styleMainUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, "media", "main.css")
+      vscode.Uri.joinPath(this._extensionUri, "webview-ui", "build", "assets" ,"index.css")
     );
     const codiconsUri = webview.asWebviewUri(
       vscode.Uri.joinPath(
@@ -165,34 +137,12 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
           content="default-src 'none'; style-src ${webview.cspSource}; font-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
 				<meta name="viewport" content="width=device-width, initial-scale=1.0">
 				<link href="${styleResetUri}" rel="stylesheet">
-				<link href="${styleVSCodeUri}" rel="stylesheet">
 				<link href="${styleMainUri}" rel="stylesheet">
 				<link href="${codiconsUri}" rel="stylesheet">
 				<title>Search Query</title>
 			</head>
 			<body>
-        <div class="query-widget">
-          <a class="query-replace-toggle" id="query-replace-toggle">
-            <div id="query-replace-toggle-off" class="icon"><i class="codicon codicon-chevron-right"></i></div>
-            <div id="query-replace-toggle-on" class="icon"><i class="codicon codicon-chevron-down"></i></div>
-          </a>
-          <div class="query-container container"> 
-            <textarea id="query-expr" rows="1"></textarea>
-            <button id="do-search">${l10n.t("search")}</button>
-            <textarea id="replace-expr" rows="3" 
-            placeholder="experimental: ex) $.insertAdjacentHTML('afterend', $.removeChild($.querySelector('div')).outerHTML); $"
-            ></textarea>
-          </div>
-        </div>
-        <a class="filter-toggle" id="filter-toggle">
-          <div class="icon"><i class="codicon codicon-kebab-horizontal"></i></div>
-        </a>
-        <div class="filter-container container" id="filter-container">
-          <label>${l10n.t("files to include")}</label>
-          <input id="filter-includes">
-          <label>${l10n.t("files to exclude")}</label>
-          <input id="filter-excludes">
-        </div>
+        <div id="root"></div>
 				<script nonce="${nonce}" src="${scriptUri}"></script>
 			</body>
 			</html>`;

@@ -42,12 +42,12 @@ export class JsxHtmlParserAdapter extends SearchEngine {
     return true;
   }
   searchHtml(content: string, searchContext: SearchContext): TNode[] {
-    const rootNode = this.parse(content);
+    const parser = new pHtmlParser({ skipComment: false, caseSensitive: searchContext.matchCase });
+    const rootNode = this.parse(content, parser);
     const result = rootNode.querySelectorAll(searchContext.search);
     return [...result];
   }
-  parse(content: string) {
-    const parser = new pHtmlParser({ skipComment: false });
+  parse(content: string, parser: pHtmlParser) {
     const sourceFile = ts.createSourceFile("dummy.tsx", content, ts.ScriptTarget.ES2015);
     
     const range = {

@@ -2,12 +2,14 @@
 .vscode-test/**
 out/**
 node_modules/**
-!node_modules/@vscode/codicons/dist/**
+# NOTE: copy to webview-ui/build/assets/ when build by vite
+# !node_modules/@vscode/codicons/dist/**
 src/**
 .gitignore
 .yarnrc
 webpack.config.js
-vsc-extension-quickstart.md
+webview-ui/**
+!webview-ui/build/assets/**
 **/tsconfig.json
 **/.eslintrc.json
 **/*.map

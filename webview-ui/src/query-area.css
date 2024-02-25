@@ -1,0 +1,32 @@
+.query-area {
+  display: flex;
+  margin: 0px 12px 0px 0px;
+}
+
+.filter-area {
+  margin: 0px 12px 0px 20px;
+}
+
+.replace-toggle {
+  align-self: stretch;
+  margin: auto 0px;
+  flex-basis: content;
+}
+
+.filter-toggle {
+  position: absolute;
+  right: -2px;
+  cursor: pointer;
+  width: 25px;
+  height: 16px;
+}
+
+.fill-container {
+  width: 100%;
+}
+
+.active_option {
+  color: var(--vscode-inputOption-activeForeground);
+  border-color: var(--vscode-inputOption-activeBorder);
+  background-color: var(--vscode-inputOption-activeBackground);
+}

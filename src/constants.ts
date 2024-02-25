@@ -22,7 +22,7 @@ export enum ContextValues {
 //--
 export enum State {
   latestQuery = "querySerach.latestQuery",
-  latestReplaceExpression = "querySerach.latestReplaceExpr",
+  latestReplaceContext = "querySerach.latestReplaceContext",
 }
 
 export interface ExecuteMode {

@@ -5,7 +5,8 @@ import {
   ReplaceEdit
 } from "./replace-edit";
 import { ExecuteModes } from "../constants";
-import { QSNode, SearchContext } from "../model/search-context.model";
+import { SearchContext } from "../model/search-context.model";
+import { QSNode } from "../model/qs-node.model";
 
 
 export abstract class SearchEngine {
@@ -42,6 +43,10 @@ export abstract class SearchEngine {
       return;
     }
     for (const item of searchResult.items) {
+      if(item.isOverlapping){
+        // skip 
+        continue;
+      }
       await this._replaceItem(item, document, replaceExpr, edit);
     }
 

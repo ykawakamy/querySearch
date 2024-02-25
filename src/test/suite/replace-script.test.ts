@@ -6,6 +6,7 @@ import { NodeHtmlParserAdaptor } from "../../engine/node-html-parser";
 import { SearchResultPanelProvider } from "../../view/search-result-panel";
 import { ReplacePreviewDocumentProvider } from "../../view/replace-preview";
 import { Tempfile } from "./tempFileUtil";
+import { defaultSearchContext } from "../../model/search-context.model";
 
 suite("Replace Script Test", () => {
   after(() => {});
@@ -28,7 +29,10 @@ suite("Replace Script Test", () => {
     replace: string,
     expected: unknown
   ) {
-		const searchContext = {search, replace};
+		const searchContext = {
+			...defaultSearchContext,
+			search, replace
+		};
 		const result = new NodeHtmlParserAdaptor().search(document, searchContext );
 
 		await testee.replace(result!.items[0]);

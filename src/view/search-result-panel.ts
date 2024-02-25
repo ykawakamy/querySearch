@@ -195,10 +195,11 @@ export class SearchResultPanelProvider
     searchContext: SearchContext
   ) {
     const ig = ignore().add(gitIgnorePatterns);
-    if (searchContext.excludes) {
+    const isEnable = searchContext.filterToggle;
+    if ( isEnable && searchContext.excludes) {
       ig.add(searchContext.excludes!);
     }
-    const includes = searchContext.includes
+    const includes = isEnable && searchContext.includes
       ? (t: string) => ignore().add(searchContext.includes!).test(t).ignored
       : (t: string) => true;
     const filter = (filePath: string, isFolder: boolean) => {
@@ -290,12 +291,12 @@ export class SearchResultPanelProvider
     try{
       for (const searchResult of searchResults) {
         const searchEngine = this.searchEngines.find((v) =>
-          v.canApply(searchResult.resourceUri)
+          v.canApply(searchResult.resourceUri!)
         );
         if (searchEngine) {
           await searchEngine.replace(searchResult, searchResult.searchContext.replace!, edit);
         }
-        this.previewProvider.refresh(searchResult.resourceUri, searchResult.searchContext);
+        this.previewProvider.refresh(searchResult.resourceUri!, searchResult.searchContext);
       }
     } catch (e: any) {
       void vscode.window.showErrorMessage(

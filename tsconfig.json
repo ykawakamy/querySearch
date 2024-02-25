@@ -9,8 +9,9 @@
 		"rootDirs": ["./src", "./test"],
 		"strict": true,   /* enable all strict type-checking options */
 
-    "declaration": true,                   /* Generates corresponding '.d.ts' file. */
-    "declarationMap": true, 
+    // "declaration": true,                   /* Generates corresponding '.d.ts' file. */
+    // "declarationMap": true, 
+		// "declarationDir": "./dist"
 		/* Additional Checks */
 		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
 		// "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
@@ -22,5 +23,6 @@
 		"webview-ui",
 		"test",
 		"out",
+		"dist",
 	]
 }

@@ -6,8 +6,9 @@ import { PHtmlElement } from "html-parser/dist/model/PHtmlElement";
 import { PHtmlNode } from "html-parser/dist/model/PHtmlNode";
 import * as vscode from "vscode";
 import { htmlUtil } from "../util/html-util";
-import { QSNode, SearchContext } from "../model/search-context.model";
+import { SearchContext } from "../model/search-context.model";
 import { SearchEngine } from "./search-engine";
+import { QSNode } from "../model/qs-node.model";
 
 export class NodeHtmlParserAdaptor extends SearchEngine {
   canApply( uri: vscode.Uri){
@@ -26,14 +27,16 @@ export class NodeHtmlParserAdaptor extends SearchEngine {
   }
 
 
-  parser = new pHtmlParser({skipComment: false});
+
   validateSearchContext(searchContext: SearchContext){
     const compiledQuery = CSSselect.compile(searchContext.search);
 
     return true;
   };
   searchHtml(content: string, searchContext: SearchContext): QSNode[] {
-    const rootNode = this.parser.parse(content);
+    const parser = new pHtmlParser({skipComment: false, caseSensitive: searchContext.matchCase});
+
+    const rootNode = parser.parse(content);
     const result = rootNode.querySelectorAll(searchContext.search);
     return [...result];
   }

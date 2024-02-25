@@ -1,36 +1,50 @@
 import * as vscode from "vscode";
 import { Constants, ExecuteMode } from "../constants";
-import { QSNode, SearchContext } from "./search-context.model";
+import { SearchContext } from "./search-context.model";
 import { htmlUtil } from "../util/html-util";
 import path = require("path");
+import { QSNode } from "./qs-node.model";
+
 export class SerachResult extends vscode.TreeItem {
   items: SerachResultItem[];
-  resourceUri: vscode.Uri;
   version: number;
 
   constructor(
     public document: vscode.TextDocument,
-    items: QSNode[],
+    nodes: QSNode[],
     public searchContext: SearchContext,
     public executeMode: ExecuteMode
   ) {
     super(document.uri);
-    const uri = document.uri;
     this.version = document.version;
-    this.resourceUri = uri;
-    this.description = path.dirname(uri.fsPath);
+    this.description = path.dirname(document.uri.fsPath);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
-    this.items =
-      items?.map((v, i) => {
-        return this.toItem(v, i, document, searchContext, executeMode);
-      }) || [];
+    
+    this.items = [];
+    let prev = null;
+    const sortedNodes = nodes.sort((a:QSNode,b:QSNode)=> ( (a?.range?.startOpenTag ?? 0) - (b?.range?.startOpenTag ?? 0) ) );
+    for( const node of sortedNodes ){
+        const item = this.toItem(node, document, searchContext, executeMode);
+        if(prev){
+          const s = Math.min(prev.startOffset, item.startOffset);
+          const e = Math.max(prev.startOffset, item.startOffset);
+          const c = item.endOffset - item.startOffset;
+          const p = prev.endOffset - prev.startOffset;
+          if( e-s < c + p ) {
+            item.isOverlapping = true;
+          }
+        }
+        this.items.push(item);
+
+        prev = item;
+      
+    }
 
     this.contextValue = executeMode.file;
   }
 
   private toItem(
     v: QSNode,
-    i: number,
     document: vscode.TextDocument,
     searchContext: SearchContext,
     executeMode: ExecuteMode
@@ -39,7 +53,6 @@ export class SerachResult extends vscode.TreeItem {
     const item = new SerachResultItem(
       document,
       v,
-      i,
       startOffset,
       endOffset,
       searchContext,
@@ -53,10 +66,10 @@ export class SerachResult extends vscode.TreeItem {
 export class SerachResultItem extends vscode.TreeItem {
   parent!: SerachResult;
   isCompleted = false;
+  isOverlapping = false;
   constructor(
     public document: vscode.TextDocument,
     public tag: QSNode,
-    public index: number,
     public startOffset: number,
     public endOffset: number,
     public searchContext: SearchContext,
@@ -64,7 +77,7 @@ export class SerachResultItem extends vscode.TreeItem {
   ) {
     super(document.uri);
     const uri = document.uri;
-    this.label = tag.toString();
+    this.label = tag.outerHTML;
     this.collapsibleState = vscode.TreeItemCollapsibleState.None;
 
     this.contextValue = executeMode.item;
