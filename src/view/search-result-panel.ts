@@ -3,7 +3,7 @@ import ignore from "ignore";
 import * as path from "path";
 import { posix } from "path";
 import * as vscode from "vscode";
-import { Constants, ExecuteModes } from "../constants";
+import { Constants } from "../constants";
 import {
   ReplaceEditTextDocument,
 } from "../engine/replace-edit";
@@ -136,10 +136,12 @@ export class SearchResultPanelProvider
   }
 
   getChildren(offset?: SerachResult | SerachResultItem): Thenable<any[]> {
-    if (offset && offset instanceof SerachResult) {
+    if (offset instanceof SerachResult) {
       return Promise.resolve(offset.items);
     }
-
+    if (offset instanceof SerachResultItem) {
+      return Promise.resolve(offset.items);
+    }
     return Promise.resolve(this._result);
   }
 
@@ -272,7 +274,7 @@ export class SearchResultPanelProvider
     if( !item ){
       return;
     }
-    const searchResult = new SerachResult(item.document, [item.tag], item.searchContext, ExecuteModes.replace);
+    const searchResult = new SerachResult(item.document, [item.tag], item.searchContext);
 
     await this.replaceAll(searchResult);
 

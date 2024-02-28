@@ -5,6 +5,8 @@ export namespace Constants {
   export const COMMAND_QUERYSEARCH_REPLACEALL = "querySearch.replaceAll";
   export const COMMAND_QUERYSEARCH_REPLACEFILES = "querySearch.replaceFiles";
   export const COMMAND_QUERYSEARCH_COPY_RESULT = "querySearch.copyResult";
+
+  export const SET_CONTEXT_REPLACE_MODE = "querysearch.replaceMode";
   //--
   export const VIEW_ID_SEARCHRESULT = "searchResult";
   export const VIEW_ID_QUERY = "querySearch";
@@ -16,21 +18,9 @@ export namespace Constants {
 export enum ContextValues {
   result = "querySearch.result",
   file = "querySearch.file",
-  replaceResult = "querySearch.replaceResult",
-  replaceFile = "querySearch.replaceFile",
 }
 //--
 export enum State {
   latestQuery = "querySerach.latestQuery",
   latestReplaceContext = "querySerach.latestReplaceContext",
 }
-
-export interface ExecuteMode {
-    file: ContextValues,
-    item: ContextValues,
-}
-
-export const ExecuteModes = {
-  search: { file: ContextValues.file, item: ContextValues.result },
-  replace: { file: ContextValues.replaceFile, item: ContextValues.replaceResult },
-};

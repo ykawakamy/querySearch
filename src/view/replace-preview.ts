@@ -12,8 +12,8 @@ import { SearchEngine } from "../engine/search-engine";
 import { MemFS } from "../engine/inmemory-fsprovider";
 import { ReplaceEditMemFsTextDocument } from "../engine/replace-edit";
 import { SearchContext } from "../model/search-context.model";
-import { SerachResultItem } from "../model/search-result.model";
-import * as path from 'path';
+import { SerachResult, SerachResultItem } from "../model/search-result.model";
+import * as path from "path";
 export class ReplacePreviewDocumentProvider
   implements TextDocumentContentProvider, Disposable
 {
@@ -28,7 +28,9 @@ export class ReplacePreviewDocumentProvider
         Constants.SCHEMA_PREVIEW,
         this
       ),
-      vscode.workspace.registerFileSystemProvider("memfs", new MemFS, {isReadonly: true})
+      vscode.workspace.registerFileSystemProvider("memfs", new MemFS(), {
+        isReadonly: true,
+      })
     );
   }
 
@@ -49,44 +51,48 @@ export class ReplacePreviewDocumentProvider
       return "Canceled";
     }
 
-    try{
+    try {
       const edit = new ReplaceEditMemFsTextDocument();
       const text = await edit.openTextDocument(
         Uri.from({ scheme: uri.fragment, path: uri.path })
       );
-      const {searchContext} = JSON.parse(uri.query) ;
-      const searchEngine = this.searchEngines.find(v=>v.canApply(uri));
-      if( !searchEngine){
+      const { context: searchContext, searchResult } = JSON.parse(uri.query);
+      const searchEngine = this.searchEngines.find((v) => v.canApply(uri));
+      if (!searchEngine) {
         console.warn("can not found appliable engine.");
         return "";
       }
-  
-      const searchResult = searchEngine.search(text, searchContext);
-      if (!searchResult){
+
+      // const searchResult = searchEngine.search(text, searchContext);
+      if (!searchResult) {
         return "";
       }
       // searchResult.items = searchResult.items.filter(v=>v.index === index);
-      try{
+      try {
         await searchEngine.replace(searchResult, searchContext.replace, edit);
-      }catch(e){
+      } catch (e) {
         console.log(e);
       }
       return text.getText();
-    }catch(e){
+    } catch (e) {
       return "";
     }
   }
 
-  async openReplacePreview(item: SerachResultItem, searchContext: SearchContext) {
-    const start = item.startOffset;
-    const end = item.endOffset;
+  async openReplacePreview(
+    item: SerachResult | SerachResultItem,
+    searchContext: SearchContext
+  ) {
     const preview = getPreviewUri(item.document.uri, searchContext, item);
     const document = item.document;
     {
-      const range = new vscode.Range(
-        document.positionAt(start),
-        document.positionAt(end)
-      );
+      const range =
+        item instanceof SerachResultItem
+          ? new vscode.Range(
+              document.positionAt(item.startOffset),
+              document.positionAt(item.endOffset)
+            )
+          : undefined;
       const options: vscode.TextDocumentShowOptions = {
         selection: range,
         preserveFocus: true,
@@ -101,21 +107,42 @@ export class ReplacePreviewDocumentProvider
         vscode.l10n.t(`{0} ↔ [replaced] (Replace Preview)`, basefile),
         options
       );
-    };
+    }
   }
 
   refresh(resourceUri: vscode.Uri, searchContext: SearchContext) {
     this._onDidChange.fire(getPreviewUri(resourceUri, searchContext));
   }
-  
 }
 
-function getPreviewUri(resource: vscode.Uri, searchContext: SearchContext, item?: SerachResultItem) {
+function getPreviewUri(
+  resource: vscode.Uri,
+  searchContext: SearchContext,
+  item?: SerachResult | SerachResultItem
+) {
+  const searchResult =
+    item instanceof SerachResultItem ? item.parent : item;
+
   return vscode.Uri.from({
     scheme: Constants.SCHEMA_PREVIEW,
     path: resource.path,
     fragment: resource.scheme,
-    query: JSON.stringify({ searchContext }),
+    query: JSON.stringify(
+      { context: searchContext, searchResult },
+      function (key: string, value: any): any {
+        if (
+          (
+            key === "parent" ||
+            key === "searchContext" ||
+            key === "_parser" ||
+            key === "_parent" ||
+            key === "command" 
+          )
+        ) {
+          return undefined;
+        }
+        return value;
+      }
+    ),
   });
 }
-

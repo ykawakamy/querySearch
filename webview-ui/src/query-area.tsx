@@ -6,7 +6,6 @@ import {
 } from "@vscode/webview-ui-toolkit/react";
 import { SearchContext } from 'querysearch/src/model/search-context.model';
 import { DoSearchEvent, PatchSearchContext } from 'querysearch/src/model/webview-event';
-import { l10nCtx } from "./l10n-context";
 import { useState } from "react";
 import { vscode } from "./utilities/vscode";
 
@@ -14,6 +13,7 @@ import "querysearch/node_modules/@vscode/codicons/dist/codicon.css";
 import "querysearch/node_modules/@vscode/codicons/dist/codicon.ttf";
 
 import "./query-area.css";
+import * as  l10n from "@vscode/l10n";
 
 export default function QueryArea() {
 
@@ -119,7 +119,7 @@ export default function QueryArea() {
             </VSCodeTextField>
           <section>
             <VSCodeButton aria-label="do search" onClick={e=>doSearch()}>
-              {l10nCtx.t("search")}
+              {l10n.t("search")}
             </VSCodeButton>
           </section>
           {
@@ -148,9 +148,9 @@ export default function QueryArea() {
         {
           filterToggle && 
           <div>
-            <h4>{l10nCtx.t("files to include")}</h4>
+            <h4>{l10n.t("files to include")}</h4>
             <VSCodeTextField id="filter-includes" className="fill-container" value={includes} onChange={(e:any)=>setIncludes(e.target.value)}/>
-            <h4>{l10nCtx.t("files to exclude")}</h4>
+            <h4>{l10n.t("files to exclude")}</h4>
             <VSCodeTextField id="filter-excludes" className="fill-container" value={excludes} onChange={(e:any)=>setExcludes(e.target.value)}/>
           </div>
         }

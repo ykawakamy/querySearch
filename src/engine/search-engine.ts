@@ -4,7 +4,6 @@ import { SerachResult, SerachResultItem } from "../model/search-result.model";
 import {
   ReplaceEdit
 } from "./replace-edit";
-import { ExecuteModes } from "../constants";
 import { SearchContext } from "../model/search-context.model";
 import { QSNode } from "../model/qs-node.model";
 
@@ -25,23 +24,19 @@ export abstract class SearchEngine {
     const content = content$.getText();
     const result = this.searchHtml(content, searchContext);
     if (result?.length > 0) {
-      const executeMode = searchContext.replaceToggle ? ExecuteModes.replace : ExecuteModes.search;
-      const r = new SerachResult(content$, result, searchContext, executeMode);
+      const r = new SerachResult(content$, result, searchContext);
       return r;
     }
     return null;
   }
 
   async replace(
-    searchResult: SerachResult,
+    searchResult: SerachResult | SerachResultItem,
     replaceExpr: string,
     edit: ReplaceEdit
   ) {
     const uri = searchResult.resourceUri!;
     const document = await edit.openTextDocument(uri!);
-    if (document.version !== searchResult.version ){
-      return;
-    }
     for (const item of searchResult.items) {
       if(item.isOverlapping){
         // skip 

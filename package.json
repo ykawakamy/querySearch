@@ -68,22 +68,22 @@
       "view/item/context": [
         {
           "command": "querySearch.openFile",
-          "when": "view == searchResult && viewItem == querySearch.replaceResult",
+          "when": "view == searchResult && viewItem == querySearch.result && querysearch.replaceMode == true",
           "group": "inline"
         },
         {
           "command": "querySearch.replace",
-          "when": "view == searchResult && viewItem == querySearch.replaceResult",
+          "when": "view == searchResult && viewItem == querySearch.result && querysearch.replaceMode == true",
           "group": "inline"
         },
         {
           "command": "querySearch.openFile",
-          "when": "view == searchResult && viewItem == querySearch.replaceFile",
+          "when": "view == searchResult && viewItem == querySearch.file && querysearch.replaceMode == true",
           "group": "inline"
         },
         {
           "command": "querySearch.replaceAll",
-          "when": "view == searchResult && viewItem == querySearch.replaceFile",
+          "when": "view == searchResult && viewItem == querySearch.file && querysearch.replaceMode == true",
           "group": "inline"
         },
         {

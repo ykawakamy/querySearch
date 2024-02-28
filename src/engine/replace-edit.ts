@@ -1,4 +1,4 @@
-import * as  l10n from "@vscode/l10n";
+import * as l10n from "@vscode/l10n";
 import * as vscode from "vscode";
 import { Range } from "vscode";
 
