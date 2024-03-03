@@ -3,14 +3,26 @@
 		"module": "commonjs",
 		"target": "ES2020",
 		"lib": [
-			"ES2020"
+			"ES2023"
 		],
 		"sourceMap": true,
-		"rootDir": "src",
-		"strict": true   /* enable all strict type-checking options */
+		"rootDirs": ["./src", "./test"],
+		"strict": true,   /* enable all strict type-checking options */
+
+    // "declaration": true,                   /* Generates corresponding '.d.ts' file. */
+    // "declarationMap": true, 
+		// "declarationDir": "./dist"
 		/* Additional Checks */
 		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
 		// "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
 		// "noUnusedParameters": true,  /* Report errors on unused parameters. */
-	}
+	},
+	"exclude": [
+		"node_modules",
+		".vscode-test", 
+		"webview-ui",
+		"test",
+		"out",
+		"dist",
+	]
 }

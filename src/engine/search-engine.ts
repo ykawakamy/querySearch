@@ -1,11 +1,11 @@
 import * as vm from "vm";
 import * as vscode from "vscode";
-import { SerachResult, SerachResultItem } from "../model/search-result.model";
+import { SearchResult, SearchResultItem, SearchResultTreeItem } from "../model/search-result.model";
 import {
   ReplaceEdit
 } from "./replace-edit";
-import { ExecuteModes } from "../constants";
-import { QSNode, SearchContext } from "../model/search-context.model";
+import { SearchContext } from "../model/search-context.model";
+import { QSNode } from "../model/qs-node.model";
 
 
 export abstract class SearchEngine {
@@ -20,36 +20,30 @@ export abstract class SearchEngine {
   search(
     content$: vscode.TextDocument,
     searchContext: SearchContext
-  ): SerachResult | null {
+  ): SearchResult | null {
     const content = content$.getText();
     const result = this.searchHtml(content, searchContext);
     if (result?.length > 0) {
-      const executeMode = searchContext.replaceToggle ? ExecuteModes.replace : ExecuteModes.search;
-      const r = new SerachResult(content$, result, searchContext, executeMode);
+      const r = new SearchResult(content$.uri, content$, result, searchContext);
       return r;
     }
     return null;
   }
 
   async replace(
-    searchResult: SerachResult,
+    searchResult: SearchResultTreeItem,
     replaceExpr: string,
     edit: ReplaceEdit
   ) {
     const uri = searchResult.resourceUri!;
-    const document = await edit.openTextDocument(uri!);
-    if (document.version !== searchResult.version ){
-      return;
-    }
+    const document = await vscode.workspace.openTextDocument(uri!);
     for (const item of searchResult.items) {
       await this._replaceItem(item, document, replaceExpr, edit);
     }
-
-    await edit.applyEdit();
   }
 
   private async _replaceItem(
-    item: SerachResultItem,
+    item: SearchResultItem,
     document: vscode.TextDocument,
     replaceExpr: string,
     edit: ReplaceEdit

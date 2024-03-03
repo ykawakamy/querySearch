@@ -2,7 +2,7 @@
   "name": "querysearch",
   "displayName": "querySearch",
   "description": "%description%",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "engines": {
     "vscode": "^1.83.0"
   },
@@ -18,7 +18,7 @@
   ],
   "main": "./dist/extension.js",
   "l10n": "./l10n",
-  "icon":"icon.png",
+  "icon": "icon.png",
   "contributes": {
     "views": {
       "explorer": [
@@ -68,22 +68,22 @@
       "view/item/context": [
         {
           "command": "querySearch.openFile",
-          "when": "view == searchResult && viewItem == querySearch.replaceResult",
+          "when": "view == searchResult && viewItem == querySearch.result && querysearch.replaceMode == true",
           "group": "inline"
         },
         {
           "command": "querySearch.replace",
-          "when": "view == searchResult && viewItem == querySearch.replaceResult",
+          "when": "view == searchResult && viewItem == querySearch.result && querysearch.replaceMode == true",
           "group": "inline"
         },
         {
           "command": "querySearch.openFile",
-          "when": "view == searchResult && viewItem == querySearch.replaceFile",
+          "when": "view == searchResult && viewItem == querySearch.file && querysearch.replaceMode == true",
           "group": "inline"
         },
         {
           "command": "querySearch.replaceAll",
-          "when": "view == searchResult && viewItem == querySearch.replaceFile",
+          "when": "view == searchResult && viewItem == querySearch.file && querysearch.replaceMode == true",
           "group": "inline"
         },
         {
@@ -104,37 +104,38 @@
     "vscode:prepublish": "npm run package",
     "compile": "webpack",
     "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
+    "package": "cd webview-ui && npm run build && cd .. && webpack --mode production --devtool hidden-source-map",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js",
+    "test": "node --enable-source-maps ./out/test/runTest.js",
     "l10n:generate": "npx @vscode/l10n-dev export --outDir ./l10n ./src"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "16.x",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "20.x",
     "@types/vscode": "^1.83.0",
-    "@typescript-eslint/eslint-plugin": "^6.12.0",
-    "@typescript-eslint/parser": "^6.12.0",
-    "@vscode/l10n-dev": "^0.0.30",
-    "@vscode/test-electron": "^2.2.2",
-    "eslint": "^8.54.0",
-    "glob": "^8.1.0",
-    "mocha": "^10.1.0",
-    "ts-loader": "^9.4.2",
-    "typescript": "^4.9.4",
+    "@typescript-eslint/eslint-plugin": "^7.1.0",
+    "@typescript-eslint/parser": "^7.1.0",
+    "@vscode/l10n-dev": "^0.0.34",
+    "@vscode/test-electron": "^2.3.9",
+    "eslint": "^8.57.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.3.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
     "vsce": "^2.15.0",
-    "webpack": "^5.75.0",
-    "webpack-cli": "^5.0.2"
+    "webpack": "^5.90.3",
+    "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "@vscode/codicons": "^0.0.33",
-    "@vscode/l10n": "^0.0.16",
+    "@vscode/codicons": "^0.0.35",
+    "@vscode/l10n": "^0.0.18",
+    "@vscode/webview-ui-toolkit": "^1.4.0",
     "html-parser": "file:../html-parser",
-    "ignore": "^5.2.4",
-    "vscode-uri": "^3.0.7"
+    "ignore": "^5.3.1",
+    "vscode-uri": "^3.0.8"
   }
 }

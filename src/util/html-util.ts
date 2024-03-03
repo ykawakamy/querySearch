@@ -1,5 +1,5 @@
 import { PHtmlElement,PHtmlNode,PHtmlDocument } from 'html-parser';
-import { QSNode } from "../model/search-context.model";
+import { QSNode } from '../model/qs-node.model';
 
 export namespace htmlUtil {
   export function getOffsetOfCloseTag(v: QSNode) {

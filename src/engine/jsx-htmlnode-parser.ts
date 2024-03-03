@@ -5,7 +5,7 @@ import {
   IPHtmlElement,
   IPHtmlNode
 } from "html-parser/dist/interface";
-import { PHtmlAttributes } from "html-parser/dist/model/PHtmlAttributes";
+import { PHtmlRawAttributes } from "html-parser/dist/model/PHtmlAttributes";
 import { PHtmlDocument } from "html-parser/dist/model/PHtmlDocument";
 import { PHtmlElement } from "html-parser/dist/model/PHtmlElement";
 import { PHtmlNode } from "html-parser/dist/model/PHtmlNode";
@@ -42,12 +42,12 @@ export class JsxHtmlParserAdapter extends SearchEngine {
     return true;
   }
   searchHtml(content: string, searchContext: SearchContext): TNode[] {
-    const rootNode = this.parse(content);
+    const parser = new pHtmlParser({ skipComment: false, caseSensitive: searchContext.matchCase });
+    const rootNode = this.parse(content, parser);
     const result = rootNode.querySelectorAll(searchContext.search);
     return [...result];
   }
-  parser = new pHtmlParser({ skipComment: false });
-  parse(content: string) {
+  parse(content: string, parser: pHtmlParser) {
     const sourceFile = ts.createSourceFile("dummy.tsx", content, ts.ScriptTarget.ES2015);
     
     const range = {
@@ -56,7 +56,7 @@ export class JsxHtmlParserAdapter extends SearchEngine {
       startCloseTag: content.length,
       endCloseTag: content.length,
     };
-    const document = new PHtmlDocument(this.parser, range);
+    const document = new PHtmlDocument(parser, range);
 
     const stack: Array<PHtmlElement> = [];
     let lastPos = 0;
@@ -73,16 +73,16 @@ export class JsxHtmlParserAdapter extends SearchEngine {
         startCloseTag: tsNode.end,
         endCloseTag: tsNode.end,
       };
-      const attr = new PHtmlAttributes();
+      const attr = new PHtmlRawAttributes(parser);
       for( const it of attributes.properties ){
         if( ts.isJsxAttribute(it) ){
-          attr.add( it.name.text, it.initializer?.getText(sourceFile) ?? "", it.getFullText(sourceFile));
+          attr.add( it.name.getText(sourceFile), it.initializer?.getText(sourceFile) ?? "", it.getFullText(sourceFile));
         }else{
           attr.add( it.expression.getText(sourceFile), "", it.getFullText(sourceFile));
         }
       }
       const trail = content.substring(attributes.end, tsNode.end - 1  - (isSelfClosing ? 1 :0 ));
-      const node = new PHtmlElement(tagName, htmlNode, attr, isSelfClosing, trail, this.parser, range);
+      const node = new PHtmlElement(tagName, htmlNode, attr, isSelfClosing, trail, parser, range);
       return node;
     };
     const createNode = (content: string, start: number, end: number, htmlNode: IPHtmlNode) =>{
@@ -93,7 +93,7 @@ export class JsxHtmlParserAdapter extends SearchEngine {
         startCloseTag: end,
         endCloseTag: end,
       };
-      const node = new PHtmlNode(raw, htmlNode, this.parser, range);
+      const node = new PHtmlNode(raw, htmlNode, parser, range);
       return node;
     };
     const traversal = (parent: PHtmlElement, tsNode: ts.Node) => {
