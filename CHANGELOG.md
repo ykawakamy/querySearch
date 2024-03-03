@@ -11,15 +11,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
  - [ ] improve replace feature.
    - [ ] add replace script editor.
 
-## [0.0.5] - 2023-02-23
+## [0.0.5] - 2023-03-03
 
  - fix attribute selector case matching.
  - add case-sensitive search.
- - fix e2e test.
-
-### for Development
-
- - webview
+ - reimplimented search panael by react.
+ - changed display of nested tags in search results.
 
 ## [0.0.4] - 2023-12-16
 

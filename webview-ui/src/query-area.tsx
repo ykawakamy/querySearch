@@ -9,19 +9,17 @@ import { DoSearchEvent, PatchSearchContext } from 'querysearch/src/model/webview
 import { useState } from "react";
 import { vscode } from "./utilities/vscode";
 
-import "querysearch/node_modules/@vscode/codicons/dist/codicon.css";
-import "querysearch/node_modules/@vscode/codicons/dist/codicon.ttf";
-
 import "./query-area.css";
 import * as  l10n from "@vscode/l10n";
 
 export default function QueryArea() {
 
   const searchContext: SearchContext= vscode.getState() || {} as SearchContext;
-
+  searchContext.replaceContext = searchContext.replaceContext ?? {};
+  
   const [search, setSearch] = useState(searchContext.search ?? "");
-  const [replace, setReplace] = useState(searchContext.replace ?? "");
-  const [replaceToggle, setReplaceToggle] = useState(searchContext.replaceToggle ?? false);
+  const [replace, setReplace] = useState(searchContext.replaceContext.replace ?? "");
+  const [replaceToggle, setReplaceToggle] = useState(searchContext.replaceContext.replaceToggle ?? false);
   const [filterToggle, setFilterToggle] = useState(searchContext.filterToggle ?? false);
   const [includes, setIncludes] = useState(searchContext.includes ?? "");
   const [excludes, setExcludes] = useState(searchContext.excludes ?? "");
@@ -30,12 +28,14 @@ export default function QueryArea() {
   function doSearch(): void {
     const newSearchContext: SearchContext = {
       search,
-      replace,
-      replaceToggle,
       filterToggle,
       includes,
       excludes,
       matchCase,
+      replaceContext: {
+        replace,
+        replaceToggle,
+      },
     };
 
     vscode.setState(newSearchContext);
@@ -47,7 +47,7 @@ export default function QueryArea() {
 
   function onChangeReplace(e:any){
     const newValue = e.target.value;
-    searchContext.replace = newValue;
+    searchContext.replaceContext.replace = newValue;
 
     setReplace(newValue);
     vscode.setState(searchContext);
@@ -60,7 +60,7 @@ export default function QueryArea() {
 
   function onChangeReplaceToggle(e:any){
     const newValue = !replaceToggle;
-    searchContext.replaceToggle = newValue;
+    searchContext.replaceContext.replaceToggle = newValue;
 
     setReplaceToggle(newValue);
     vscode.setState(searchContext);
@@ -77,11 +77,6 @@ export default function QueryArea() {
 
     setFilterToggle(newValue);
     vscode.setState(searchContext);
-
-    vscode.postMessage<PatchSearchContext>({
-      type: "patch-search-context",
-      filterToggle: newValue,
-    });
   }
 
   function onChangeMatchCase(e:any){
@@ -90,11 +85,6 @@ export default function QueryArea() {
 
     setMatchCase(newValue);
     vscode.setState(searchContext);
-
-    vscode.postMessage<PatchSearchContext>({
-      type: "patch-search-context",
-      matchCase: newValue,
-    });
   }
 
   return (

@@ -14,18 +14,19 @@ export interface ReplaceEdit {
     newText: string
   ): Thenable<void>;
   applyEdit(): Thenable<void>;
-  modifiedTextDocument(uri: vscode.Uri): Thenable<vscode.TextDocument>;
 }
 
 export class ReplaceEditTextDocument implements ReplaceEdit {
   protected edit = new vscode.WorkspaceEdit();
-  document!: vscode.TextDocument;
+  documents: Record<string,vscode.TextDocument> = {};
 
   async openTextDocument(uri: vscode.Uri): Promise<vscode.TextDocument> {
-    if(!this.document){
-      this.document = await vscode.workspace.openTextDocument(uri!);
+    if(this.documents[uri.fsPath]){
+      return this.documents[uri.fsPath];
     }
-    return this.document;
+    const document = await vscode.workspace.openTextDocument(uri!);
+    this.documents[uri.fsPath] = document;
+    return document;
   }
   async replace(
     uri: vscode.Uri,
@@ -37,7 +38,7 @@ export class ReplaceEditTextDocument implements ReplaceEdit {
       document.positionAt(range[0]),
       document.positionAt(range[1])
     );
-    this.edit.replace(uri, vsrange, newText);
+    this.edit.replace(document.uri, vsrange, newText);
   }
   async applyEdit(): Promise<void> {
     if(this.edit.size === 0){
@@ -46,42 +47,41 @@ export class ReplaceEditTextDocument implements ReplaceEdit {
     const result = await vscode.workspace.applyEdit(this.edit);
     if( !result ){
       throw new Error(vscode.l10n.t("cannot applyEdit."));
-    } 
-    await this.document.save();
-  }
-
-  async modifiedTextDocument(uri: vscode.Uri): Promise<vscode.TextDocument> {
-    return this.document;
+    }
+    for( const document of Object.values(this.documents)){
+      await document.save();
+    }
   }
 }
 
 export class ReplaceEditMemFsTextDocument extends ReplaceEditTextDocument {
-  document!: vscode.TextDocument;
+  documents: Record<string,vscode.TextDocument> = {};
 
   async openTextDocument(uri: vscode.Uri): Promise<vscode.TextDocument> {
-    if(!this.document){
-      const memUri = vscode.Uri.from({scheme: "memfs", path: uri.path, fragment: uri.scheme });
-      const document = await vscode.workspace.openTextDocument(memUri);
-
-      // XXX workaround reload
-      const edit = new vscode.WorkspaceEdit();
-      const range = new vscode.Range(
-        document.lineAt(0).range.start,
-        document.lineAt(document.lineCount - 1).range.end
-      );
-      const rawText = await vscode.workspace.fs.readFile(vscode.Uri.from({scheme: uri.fragment, path: uri.path}));
-      edit.replace(document.uri, range, rawText.toString());
-      const result = await vscode.workspace.applyEdit(edit);
-      this.document = document;
+    if(this.documents[uri.fsPath]){
+      return this.documents[uri.fsPath];
     }
-    return this.document;
+    const memUri = vscode.Uri.from({scheme: "memfs", path: uri.path, fragment: uri.scheme });
+    const document = await vscode.workspace.openTextDocument(memUri);
+    this.documents[uri.fsPath] = document;
+    // XXX workaround reload
+    const edit = new vscode.WorkspaceEdit();
+    const range = new vscode.Range(
+      document.lineAt(0).range.start,
+      document.lineAt(document.lineCount - 1).range.end
+    );
+    const rawText = await vscode.workspace.fs.readFile(vscode.Uri.from({scheme: uri.fragment, path: uri.path}));
+    edit.replace(document.uri, range, rawText.toString());
+    await vscode.workspace.applyEdit(edit);
+
+    return document;
   }
 
   async applyEdit(): Promise<void> {
     if(this.edit.size === 0){
       return;
     }
-    const result = await vscode.workspace.applyEdit(this.edit);
+    const result = await vscode.workspace.applyEdit(this.edit, {isRefactoring: true});
     if( !result ){
       throw new Error(vscode.l10n.t("cannot applyEdit."));
     } 

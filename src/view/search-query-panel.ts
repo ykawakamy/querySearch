@@ -4,7 +4,7 @@ import {
   SearchContext,
   defaultSearchContext,
 } from "../model/search-context.model";
-import { SerachResult, SerachResultItem } from "../model/search-result.model";
+import { SearchResult, SearchResultItem } from "../model/search-result.model";
 import { ReplacePreviewDocumentProvider } from "./replace-preview";
 import { SearchResultPanelProvider } from "./search-result-panel";
 import path = require("path");
@@ -47,32 +47,28 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
       ),
       vscode.commands.registerCommand(
         Constants.COMMAND_QUERYSEARCH_OPENFILE,
-        (item: SerachResult | SerachResultItem) => this.openResource(item)
+        (item: SearchResult | SearchResultItem) => this.openResource(item)
       ),
       vscode.commands.registerCommand(
         Constants.COMMAND_QUERYSEARCH_PREVIEWFILE,
-        (item: SerachResult | SerachResultItem) =>
-          this.searchContext.replaceToggle
+        (item: SearchResult | SearchResultItem) =>
+          this.searchContext.replaceContext.replaceToggle
             ? this.openReplacePreview(item)
             : this.openResource(item)
       )
     );
   }
 
-  openResource(item: SerachResult | SerachResultItem) {
-    const document = item.document;
-    if (item instanceof SerachResult) {
+  openResource(item: SearchResult | SearchResultItem) {
+    const document = item.resourceUri;
+    if (item instanceof SearchResult) {
       void vscode.window.showTextDocument(document);
     } else {
-      const range = new vscode.Range(
-        document.positionAt(item.startOffset),
-        document.positionAt(item.endOffset)
-      );
-      void vscode.window.showTextDocument(document, { selection: range });
+      void vscode.window.showTextDocument(document, { selection: item.range });
     }
   }
 
-  openReplacePreview(item: SerachResult | SerachResultItem) {
+  openReplacePreview(item: SearchResult | SearchResultItem) {
     const searchContext = this.searchContext;
     void this.previewProvider.openReplacePreview(item, searchContext);
   }
@@ -99,16 +95,16 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
           this.searchContext = {
             ...data,
           };
-          await vscode.commands.executeCommand("setContext", Constants.SET_CONTEXT_REPLACE_MODE, this.searchContext.replaceToggle );
+          await vscode.commands.executeCommand("setContext", Constants.SET_CONTEXT_REPLACE_MODE, this.searchContext.replaceContext.replaceToggle );
           void this.resultPanel.searchWorkspace(this.searchContext);
           break;
         }
         case "patch-search-context": {
-          this.searchContext = {
-            ...this.searchContext,
+          this.searchContext.replaceContext = {
+            ...this.searchContext.replaceContext ,
             ...data,
           };
-          await vscode.commands.executeCommand("setContext", Constants.SET_CONTEXT_REPLACE_MODE, this.searchContext.replaceToggle );
+          await vscode.commands.executeCommand("setContext", Constants.SET_CONTEXT_REPLACE_MODE, this.searchContext.replaceContext.replaceToggle );
           break;
         }
       }

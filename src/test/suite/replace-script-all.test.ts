@@ -33,12 +33,16 @@ suite("ReplaceAll Script Test", () => {
     replace: string,
     expected: unknown
   ) {
-    const searchContext = { 
+    const searchContext = {
       ...defaultSearchContext,
-      search, replace 
+      search,
+      replaceContext: {
+        replace,
+        replaceToggle: false,
+      },
     };
     const result = new NodeHtmlParserAdaptor().search(document, searchContext);
-
+    testee.latestSearchContext = searchContext;
     await testee.replaceAll(result!);
     assert.equal(document.getText(), expected);
   }
@@ -51,10 +55,10 @@ suite("ReplaceAll Script Test", () => {
     });
     const searchContext = "ul:has(li)";
     const replaceExpr = `
-			var s = $.querySelector("li");
-			$.removeChild(s);
-			$.insertAdjacentHTML("afterend", s.outerHTML);
-		`;
+      var s = $.querySelector("li");
+      $.removeChild(s);
+      $.insertAdjacentHTML("afterend", s.outerHTML);
+    `;
     const expected =
       "<ul><li>file</li></ul><li>file</li>" +
       "<ul><li>file</li></ul><li>file</li>";
@@ -65,32 +69,32 @@ suite("ReplaceAll Script Test", () => {
   test("remove and insert to AfterEnd, multiline", async () => {
     const document = await tempfile.createDocument({
       content: `
-		<ul>
-		<li>file</li>
-		<li>file</li>
-		</ul>
-		<ul>
-		<li>file</li>
-		<li>file</li>
-		</ul>
-		`,
+    <ul>
+    <li>file</li>
+    <li>file</li>
+    </ul>
+    <ul>
+    <li>file</li>
+    <li>file</li>
+    </ul>
+    `,
     });
     const searchContext = "ul:has(li)";
     const replaceExpr = `
-			var s = $.querySelector("li");
-			$.removeChild(s);
-			$.insertAdjacentHTML("afterend", s.outerHTML);
-		`;
+      var s = $.querySelector("li");
+      $.removeChild(s);
+      $.insertAdjacentHTML("afterend", s.outerHTML);
+    `;
     const expected = `
-		<ul>
-		
-		<li>file</li>
-		</ul><li>file</li>
-		<ul>
-		
-		<li>file</li>
-		</ul><li>file</li>
-		`;
+    <ul>
+    
+    <li>file</li>
+    </ul><li>file</li>
+    <ul>
+    
+    <li>file</li>
+    </ul><li>file</li>
+    `;
 
     await assertReplace(document, searchContext, replaceExpr, expected);
   });
@@ -99,24 +103,24 @@ suite("ReplaceAll Script Test", () => {
   test.skip("remove and insert to AfterEnd, preserve closing/empty tag", async () => {
     const document = await tempfile.createDocument({
       content: `
-		<ul>
-		<li />
-		<li />
-		</ul>
-		`,
+    <ul>
+    <li />
+    <li />
+    </ul>
+    `,
     });
     const searchContext = "ul:has(li)";
     const replaceExpr = `
-			var s = $.querySelector("li");
-			$.removeChild(s);
-			$.insertAdjacentHTML("afterend", s.outerHTML);
-		`;
+      var s = $.querySelector("li");
+      $.removeChild(s);
+      $.insertAdjacentHTML("afterend", s.outerHTML);
+    `;
     const expected = `
-		<ul>
-		
-		<li />
-		</ul><li />
-		`;
+    <ul>
+    
+    <li />
+    </ul><li />
+    `;
 
     await assertReplace(document, searchContext, replaceExpr, expected);
   });
@@ -124,21 +128,21 @@ suite("ReplaceAll Script Test", () => {
   test.skip("remove and insert to AfterEnd, preserve closing/empty tag", async () => {
     const document = await tempfile.createDocument({
       content: `
-		<ul>
-		<li />
-		<li />
-		</ul>
-		`,
+    <ul>
+    <li />
+    <li />
+    </ul>
+    `,
     });
     const searchContext = "ul:has(li)";
     const replaceExpr = `
-		`;
+    `;
     const expected = `
-		<ul>
-		<li />
-		<li />
-		</ul>
-		`;
+    <ul>
+    <li />
+    <li />
+    </ul>
+    `;
 
     await assertReplace(document, searchContext, replaceExpr, expected);
   });
@@ -146,28 +150,28 @@ suite("ReplaceAll Script Test", () => {
   test("remove and insert to AfterEnd, preserve attribute order tag", async () => {
     const document = await tempfile.createDocument({
       content: `
-		<ul>
-		<li b="1" a="2"></li>
-		</ul>
-		<ul>
-		<li b="1" a="2"></li>
-		</ul>
-		`,
+    <ul>
+    <li b="1" a="2"></li>
+    </ul>
+    <ul>
+    <li b="1" a="2"></li>
+    </ul>
+    `,
     });
     const searchContext = "ul:has(li)";
     const replaceExpr = `
-			var s = $.querySelector("li");
-			$.removeChild(s);
-			$.insertAdjacentHTML("afterend", s.outerHTML);
-		`;
+      var s = $.querySelector("li");
+      $.removeChild(s);
+      $.insertAdjacentHTML("afterend", s.outerHTML);
+    `;
     const expected = `
-		<ul>
-		
-		</ul><li b="1" a="2"></li>
-		<ul>
-		
-		</ul><li b="1" a="2"></li>
-		`;
+    <ul>
+    
+    </ul><li b="1" a="2"></li>
+    <ul>
+    
+    </ul><li b="1" a="2"></li>
+    `;
 
     await assertReplace(document, searchContext, replaceExpr, expected);
   });
@@ -175,26 +179,26 @@ suite("ReplaceAll Script Test", () => {
   test("setAttribute", async () => {
     const document = await tempfile.createDocument({
       content: `
-		<ul>
-		<li></li>
-		</ul>
-		<ul>
-		<li></li>
-		</ul>
-		`,
+    <ul>
+    <li></li>
+    </ul>
+    <ul>
+    <li></li>
+    </ul>
+    `,
     });
     const searchContext = "ul:has(li)";
     const replaceExpr = `
-			$.setAttribute("addAttr", "new");
-		`;
+      $.setAttribute("addAttr", "new");
+    `;
     const expected = `
-		<ul addAttr="new">
-		<li></li>
-		</ul>
-		<ul addAttr="new">
-		<li></li>
-		</ul>
-		`;
+    <ul addAttr="new">
+    <li></li>
+    </ul>
+    <ul addAttr="new">
+    <li></li>
+    </ul>
+    `;
 
     await assertReplace(document, searchContext, replaceExpr, expected);
   });
@@ -202,34 +206,43 @@ suite("ReplaceAll Script Test", () => {
   test("nested", async () => {
     const document = await tempfile.createDocument({
       content: `
-		<ul>
-		<li>
-			<ul>
-			<li>file1</li>
-			<li>file2</li>
-			</ul>
-		</li>
-		<li>file3</li>
-		</ul>
-		<ul>
-		<li>file4</li>
-		<li>file5</li>
-		</ul>
-		`,
+    <ul>
+    <li>
+      <ul>
+      <li>file1</li>
+      <li>file2</li>
+      </ul>
+    </li>
+    <li>file3</li>
+    </ul>
+    <ul>
+    <li>file4</li>
+    <li>file5</li>
+    </ul>
+    `,
     });
     const searchContext = "ul:has(li)";
     const replaceExpr = `
-			var s = $.querySelector("li");
-			$.removeChild(s);
-			$.insertAdjacentHTML("afterend", s.outerHTML);
-		`;
-    const expected = "";
+      var s = $.querySelector("li");
+      $.removeChild(s);
+      $.insertAdjacentHTML("afterend", s.outerHTML);
+    `;
+    const expected = `
+    <ul>
+    
+    <li>file3</li>
+    </ul><li>
+      <ul>
+      <li>file1</li>
+      <li>file2</li>
+      </ul>
+    </li>
+    <ul>
+    
+    <li>file5</li>
+    </ul><li>file4</li>
+    `;
 
-    await assert.rejects(
-      async () => {
-        await assertReplace(document, searchContext, replaceExpr, expected);
-      },
-      { name: "Error", message: "cannot applyEdit." }
-    );
+    await assertReplace(document, searchContext, replaceExpr, expected);
   });
 });

@@ -1,9 +1,10 @@
+## 
 .vscode/**
 .vscode-test/**
+coverage/**
 out/**
 node_modules/**
-# NOTE: copy to webview-ui/build/assets/ when build by vite
-# !node_modules/@vscode/codicons/dist/**
+!node_modules/@vscode/codicons/dist/**
 src/**
 .gitignore
 .yarnrc

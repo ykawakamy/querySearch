@@ -1,6 +1,6 @@
 import * as vm from "vm";
 import * as vscode from "vscode";
-import { SerachResult, SerachResultItem } from "../model/search-result.model";
+import { SearchResult, SearchResultItem, SearchResultTreeItem } from "../model/search-result.model";
 import {
   ReplaceEdit
 } from "./replace-edit";
@@ -20,36 +20,30 @@ export abstract class SearchEngine {
   search(
     content$: vscode.TextDocument,
     searchContext: SearchContext
-  ): SerachResult | null {
+  ): SearchResult | null {
     const content = content$.getText();
     const result = this.searchHtml(content, searchContext);
     if (result?.length > 0) {
-      const r = new SerachResult(content$, result, searchContext);
+      const r = new SearchResult(content$.uri, content$, result, searchContext);
       return r;
     }
     return null;
   }
 
   async replace(
-    searchResult: SerachResult | SerachResultItem,
+    searchResult: SearchResultTreeItem,
     replaceExpr: string,
     edit: ReplaceEdit
   ) {
     const uri = searchResult.resourceUri!;
-    const document = await edit.openTextDocument(uri!);
+    const document = await vscode.workspace.openTextDocument(uri!);
     for (const item of searchResult.items) {
-      if(item.isOverlapping){
-        // skip 
-        continue;
-      }
       await this._replaceItem(item, document, replaceExpr, edit);
     }
-
-    await edit.applyEdit();
   }
 
   private async _replaceItem(
-    item: SerachResultItem,
+    item: SearchResultItem,
     document: vscode.TextDocument,
     replaceExpr: string,
     edit: ReplaceEdit

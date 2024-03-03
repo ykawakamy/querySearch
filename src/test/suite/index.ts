@@ -12,30 +12,22 @@ export function run(): Promise<void> {
 
 	const testsRoot = path.resolve(__dirname, '..');
 
-	return new Promise((c, e) => {
-		console.log("s");
-		glob('**/**.test.js', { cwd: testsRoot }, (err, files) => {
-			console.log("s");
-			if (err) {
-				return e(err);
-			}
-
-			// Add files to the test suite
-			files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
-
-			try {
-				// Run the mocha test
-				mocha.run(failures => {
-					if (failures > 0) {
-						e(new Error(`${failures} tests failed.`));
-					} else {
-						c();
-					}
-				});
-			} catch (err) {
-				console.error(err);
-				e(err);
-			}
-		});
+	return new Promise(async (c, e) => {
+		const files = await glob.glob('**/**.test.js', { cwd: testsRoot });
+		// Add files to the test suite
+		files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
+		try {
+			// Run the mocha test
+			mocha.run(failures => {
+				if (failures > 0) {
+					e(new Error(`${failures} tests failed.`));
+				} else {
+					c();
+				}
+			});
+		} catch (err) {
+			console.error(err);
+			e(err);
+		}
 	});
 }

@@ -76,7 +76,7 @@ export class JsxHtmlParserAdapter extends SearchEngine {
       const attr = new PHtmlRawAttributes(parser);
       for( const it of attributes.properties ){
         if( ts.isJsxAttribute(it) ){
-          attr.add( it.name.text, it.initializer?.getText(sourceFile) ?? "", it.getFullText(sourceFile));
+          attr.add( it.name.getText(sourceFile), it.initializer?.getText(sourceFile) ?? "", it.getFullText(sourceFile));
         }else{
           attr.add( it.expression.getText(sourceFile), "", it.getFullText(sourceFile));
         }
