@@ -95,16 +95,24 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
           this.searchContext = {
             ...data,
           };
-          await vscode.commands.executeCommand("setContext", Constants.SET_CONTEXT_REPLACE_MODE, this.searchContext.replaceContext.replaceToggle );
-          void this.resultPanel.searchWorkspace(this.searchContext);
+          await vscode.commands.executeCommand(
+            "setContext",
+            Constants.SET_CONTEXT_REPLACE_MODE,
+            this.searchContext.replaceContext.replaceToggle
+          );
+          void this.resultPanel.searchWorkspace(this.searchContext, webviewView.webview);
           break;
         }
         case "patch-search-context": {
           this.searchContext.replaceContext = {
-            ...this.searchContext.replaceContext ,
+            ...this.searchContext.replaceContext,
             ...data,
           };
-          await vscode.commands.executeCommand("setContext", Constants.SET_CONTEXT_REPLACE_MODE, this.searchContext.replaceContext.replaceToggle );
+          await vscode.commands.executeCommand(
+            "setContext",
+            Constants.SET_CONTEXT_REPLACE_MODE,
+            this.searchContext.replaceContext.replaceToggle
+          );
           break;
         }
       }
@@ -117,13 +125,7 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
   ) {
     // Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
     const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(
-        this._extensionUri,
-        "webview-ui",
-        "build",
-        "assets",
-        "index.js"
-      )
+      vscode.Uri.joinPath(this._extensionUri, "dist", "webview.js")
     );
     const styleResetUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, "media", "reset.css")
@@ -132,13 +134,7 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
       vscode.Uri.joinPath(this._extensionUri, "media", "vscode.css")
     );
     const styleMainUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(
-        this._extensionUri,
-        "webview-ui",
-        "build",
-        "assets",
-        "index.css"
-      )
+      vscode.Uri.joinPath(this._extensionUri, "dist", "webview.css")
     );
     const codiconsUri = webview.asWebviewUri(
       vscode.Uri.joinPath(
@@ -152,15 +148,16 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
     // Use a nonce to only allow a specific script to be run.
     const nonce = getNonce();
 
-    const bundleUrl = webview.asWebviewUri(vscode.l10n.uri!);
+    const bundleUrl = !!vscode.l10n.uri ? webview.asWebviewUri(vscode.l10n.uri) : "";
 
     return /*html*/ `<!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
         <meta http-equiv="Content-Security-Policy" 
-          content="default-src 'none'; style-src ${webview.cspSource}; font-src ${webview.cspSource}; script-src 'nonce-${nonce}'; connect-src ${webview.cspSource};">
+          content="default-src 'none'; style-src ${webview.cspSource} 'nonce-${nonce}'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}'; connect-src ${webview.cspSource};">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta property="csp-nonce" content="${nonce}">
         <link href="${styleResetUri}" rel="stylesheet">
         <link href="${styleMainUri}" rel="stylesheet">
         <link href="${codiconsUri}" rel="stylesheet">

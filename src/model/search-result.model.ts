@@ -29,14 +29,14 @@ export class SearchResult extends SearchResultTreeItem {
     uri: vscode.Uri,
     document: vscode.TextDocument | SearchResultItem,
     nodes?: QSNode[],
-    public searchContext?: SearchContext
+    public _searchContext?: SearchContext
   ) {
     super(uri);
     if (document instanceof SearchResultItem) {
       this.items = [document];
       return;
     }
-    if (!nodes || !searchContext) {
+    if (!nodes || !_searchContext) {
       throw new Error();
     }
 
@@ -48,7 +48,7 @@ export class SearchResult extends SearchResultTreeItem {
     let stack: SearchResultItem[] = [];
     let index = 0;
     for (const node of sortedNodes) {
-      const item = new SearchResultItem(document, node, searchContext);
+      const item = new SearchResultItem(document, node, _searchContext);
       let parentIdx = stack.findLastIndex((prev) => {
         const s = Math.min(prev.startOffset, item.startOffset);
         const e = Math.max(prev.endOffset, item.endOffset);
@@ -59,11 +59,11 @@ export class SearchResult extends SearchResultTreeItem {
       if (parentIdx !== -1) {
         const parent = stack[parentIdx];
         parent.items.push(item);
-        item.parent = parent;
+        item._parent = parent;
         stack.splice(parentIdx + 1, Infinity, item);
       } else {
         this.items.push(item);
-        item.parent = this;
+        item._parent = this;
         stack = [item];
       }
       item.index = index++;
@@ -88,7 +88,7 @@ export class SearchResult extends SearchResultTreeItem {
 }
 
 export class SearchResultItem extends SearchResultTreeItem {
-  parent!: SearchResult | SearchResultItem;
+  _parent!: SearchResult | SearchResultItem;
   isCompleted = false;
   index = 0;
   startOffset: number;

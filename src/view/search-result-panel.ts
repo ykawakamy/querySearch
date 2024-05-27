@@ -7,9 +7,14 @@ import { Constants } from "../constants";
 import { ReplaceEditTextDocument } from "../engine/replace-edit";
 import { ReplaceContext, SearchContext } from "../model/search-context.model";
 import { SearchEngine } from "../engine/search-engine";
-import { SearchResult, SearchResultItem, SearchResultTreeItem } from "../model/search-result.model";
+import {
+  SearchResult,
+  SearchResultItem,
+  SearchResultTreeItem,
+} from "../model/search-result.model";
 import { ReplacePreviewDocumentProvider } from "./replace-preview";
 import { ReplacedEvent } from "../model/replaced-event";
+import _ from "lodash";
 
 export class SearchResultPanelProvider
   implements vscode.TreeDataProvider<SearchResult>
@@ -20,12 +25,10 @@ export class SearchResultPanelProvider
   private _context?: vscode.ExtensionContext;
   private _result: SearchResult[] = [];
 
-  private _onDidChangeTreeData: vscode.EventEmitter<
-    SearchResult | undefined
-  > = new vscode.EventEmitter<SearchResult | undefined>();
-  readonly onDidChangeTreeData: vscode.Event<
-    SearchResult | undefined
-  > = this._onDidChangeTreeData.event;
+  private _onDidChangeTreeData: vscode.EventEmitter<SearchResult | undefined> =
+    new vscode.EventEmitter<SearchResult | undefined>();
+  readonly onDidChangeTreeData: vscode.Event<SearchResult | undefined> =
+    this._onDidChangeTreeData.event;
 
   searchEngines: SearchEngine[];
   constructor(
@@ -38,18 +41,21 @@ export class SearchResultPanelProvider
   init(context: vscode.ExtensionContext) {
     this._context = context;
 
-    const view = vscode.window.createTreeView<SearchResultTreeItem>(Constants.VIEW_ID_SEARCHRESULT, {
-      treeDataProvider: this,
-      showCollapseAll: true,
-      canSelectMany: true,
-    });
+    const view = vscode.window.createTreeView<SearchResultTreeItem>(
+      Constants.VIEW_ID_SEARCHRESULT,
+      {
+        treeDataProvider: this,
+        showCollapseAll: true,
+        canSelectMany: true,
+      }
+    );
     context.subscriptions.push(
-      view.onDidCollapseElement(e=>{
+      view.onDidCollapseElement((e) => {
         e.element.isExpanded = false;
       }),
-      view.onDidExpandElement(e=>{
+      view.onDidExpandElement((e) => {
         e.element.isExpanded = true;
-      }),
+      })
     );
     this._view = view;
 
@@ -135,9 +141,7 @@ export class SearchResultPanelProvider
     this._onDidChangeTreeData.fire(undefined);
   }
 
-  getChildren(
-    offset?: SearchResultTreeItem
-  ): Thenable<any[]> {
+  getChildren(offset?: SearchResultTreeItem): Thenable<any[]> {
     if (offset instanceof SearchResult) {
       return Promise.resolve(offset.items);
     }
@@ -146,43 +150,48 @@ export class SearchResultPanelProvider
     }
     return Promise.resolve(this._result);
   }
-  private mergeResult(replaceEvent: ReplacedEvent){
-    if(!replaceEvent.newResult){
+  private mergeResult(replaceEvent: ReplacedEvent) {
+    if (!replaceEvent.newResult) {
       this._result.splice(replaceEvent.index, 1);
       return;
     }
     const oldRootItems = this._result[replaceEvent.index];
     const newRootItems = replaceEvent.newResult;
-    
-    let change : SearchResultTreeItem = replaceEvent.newResult;
-    function recursive(oldItems: SearchResultTreeItem, newItems: SearchResultTreeItem){
-      if( oldItems.items.length !== newItems.items.length ){
+
+    let change: SearchResultTreeItem = replaceEvent.newResult;
+    function recursive(
+      oldItems: SearchResultTreeItem,
+      newItems: SearchResultTreeItem
+    ) {
+      if (oldItems.items.length !== newItems.items.length) {
         newItems.isExpanded = true;
         change = newItems;
         return;
       }
-      for( let i=0; i<oldItems.items.length; i++ ){
-        if( oldItems.items[i].items?.length > 0 ){
+      for (let i = 0; i < oldItems.items.length; i++) {
+        if (oldItems.items[i].items?.length > 0) {
           recursive(oldItems.items[i], newItems.items[i]);
         }
         newItems.isExpanded = oldItems.isExpanded;
       }
     }
-    recursive( oldRootItems, newRootItems);
+    recursive(oldRootItems, newRootItems);
     this._result[replaceEvent.index] = replaceEvent.newResult;
     this.previewProvider.refresh(
       replaceEvent.uri,
       change,
       this.latestSearchContext
     );
-
   }
 
   getTreeItem(offset: SearchResultTreeItem): vscode.TreeItem {
     return offset.toTreeItem();
   }
 
-  async searchWorkspace(searchContext: SearchContext) {
+  async searchWorkspace(
+    searchContext: SearchContext,
+    webview?: vscode.Webview
+  ) {
     try {
       for (const searchEngine of this.searchEngines) {
         searchEngine.validateSearchContext(searchContext);
@@ -227,6 +236,15 @@ export class SearchResultPanelProvider
           );
         }
         progress.report({ increment: 100 });
+        const recursiveOmit = (root: any) => _.transform(root, (r: any, v: any, k: string | number) => {
+          if (typeof k !== 'string' || !k.startsWith("_")) {
+            r[k] = _.isObject(v) ? recursiveOmit(v) : v;
+          }
+        });
+        await webview?.postMessage({
+          type: "setList",
+          list: recursiveOmit(this._result),
+        });
       }
     );
   }

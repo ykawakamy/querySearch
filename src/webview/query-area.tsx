@@ -4,13 +4,14 @@ import {
   VSCodeCheckbox,
   VSCodeTextArea,
 } from "@vscode/webview-ui-toolkit/react";
-import { SearchContext } from 'querysearch/src/model/search-context.model';
-import { DoSearchEvent, PatchSearchContext } from 'querysearch/src/model/webview-event';
+import { SearchContext } from '../model/search-context.model';
+import { DoSearchEvent, PatchSearchContext } from '../model/webview-event';
 import { useState } from "react";
 import { vscode } from "./utilities/vscode";
 
 import "./query-area.css";
 import * as  l10n from "@vscode/l10n";
+import { ResultTreeView } from "./result-tree-view";
 
 export default function QueryArea() {
 
@@ -145,7 +146,9 @@ export default function QueryArea() {
           </div>
         }
       </section>
-
+      <section>
+        <ResultTreeView></ResultTreeView>
+      </section>
     </main>
   );
 }

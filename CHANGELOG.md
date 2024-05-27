@@ -11,6 +11,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
  - [ ] improve replace feature.
    - [ ] add replace script editor.
 
+## [0.0.7] - 2023-03-04
+
+ - reimplimented search result panel by react.
+
+
 ## [0.0.6] - 2023-03-04
  - publish version.
 

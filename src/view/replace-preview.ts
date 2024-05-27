@@ -63,7 +63,7 @@ export class ReplacePreviewDocumentProvider
 
       const searchResult =
         this.selectItem instanceof SearchResultItem
-          ? this.selectItem.parent
+          ? this.selectItem._parent
           : this.selectItem;
       if (!searchResult) {
         return "";
