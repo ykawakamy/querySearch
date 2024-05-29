@@ -2,7 +2,7 @@
   "name": "querysearch",
   "displayName": "querySearch",
   "description": "%description%",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "engines": {
     "vscode": "^1.83.0"
   },
