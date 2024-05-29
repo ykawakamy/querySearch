@@ -152,7 +152,7 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
     // Use a nonce to only allow a specific script to be run.
     const nonce = getNonce();
 
-    const bundleUrl = webview.asWebviewUri(vscode.l10n.uri!);
+    const bundleUrl = vscode.l10n.uri ? webview.asWebviewUri(vscode.l10n.uri) : "";
 
     return /*html*/ `<!DOCTYPE html>
       <html lang="en">
