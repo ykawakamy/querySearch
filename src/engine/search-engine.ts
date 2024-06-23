@@ -52,7 +52,7 @@ export abstract class SearchEngine {
 
     const $ = this.createClone(baseTag);
     const original = this.getReplacedText($);
-    const vmContext = { $: $ };
+    const vmContext = { $: $, document:$.parentNode };
     vm.createContext(vmContext);
     const result = vm.runInContext(replaceExpr, vmContext, {
       timeout: 1000,

@@ -17,8 +17,10 @@ import { SearchEngine } from "./search-engine";
 
 type TNode = IPHtmlElement | IPHtmlNode | IPHtmlDocument;
 export class JsxHtmlParserAdapter extends SearchEngine {
+  suffixes = [".tsx", ".jsx", ".ts", ".js", ".mjs", ".cjs"];
+
   canApply(uri: vscode.Uri) {
-    return uri.path.endsWith(".jsx") || uri.path.endsWith(".tsx");
+    return this.suffixes.some(suffix=>uri.path.endsWith(suffix));
   }
   createClone(v: TNode): TNode {
     if (
@@ -60,11 +62,24 @@ export class JsxHtmlParserAdapter extends SearchEngine {
 
     const stack: Array<PHtmlElement> = [];
     let lastPos = 0;
+    const sourceContent = sourceFile.getFullText();
     const flush = (parent: PHtmlElement, end:number) =>{
       if(lastPos < end){
-        parent.appendChild(createNode(content, lastPos, end, parent));
+        const commentRanges = ts.getLeadingCommentRanges(sourceContent,lastPos);
+        for( const commentRange of commentRanges ?? []){
+          if(lastPos < commentRange.pos){
+            parent.appendChild(createNode(content, lastPos, commentRange.pos, parent));
+          }
+          const html = (sourceFile).getFullText().slice(commentRange.pos, commentRange.end);
+          const maybeHtml = parser.parse(html, {offset : commentRange.pos})!;
+          maybeHtml.childNodes.forEach(node=>parent.appendChild(node));
+          lastPos = commentRange.end;
+        }
+        if(lastPos < end){
+          parent.appendChild(createNode(content, lastPos, end, parent));
+          lastPos = end;
+        }
       }
-      lastPos = end;
     };
     const createHtmlNode = (tagName: string, attributes: ts.JsxAttributes, isSelfClosing: boolean, tsNode: ts.Node, htmlNode: IPHtmlNode): PHtmlElement =>{
       const range = {
@@ -96,8 +111,10 @@ export class JsxHtmlParserAdapter extends SearchEngine {
       const node = new PHtmlNode(raw, htmlNode, parser, range);
       return node;
     };
-    const traversal = (parent: PHtmlElement, tsNode: ts.Node) => {
+    const traversal = (parent: PHtmlElement, tsNode: ts.Node, pos = 0) => {
       tsNode.forEachChild((node)=>{
+        // console.log("%s %d %d %d - [%s] %s", "  ".repeat(pos),  node.pos, node.end, lastPos, sourceContent.slice(node.pos, node.end), ts.SyntaxKind[node.kind] );
+        
         if(ts.isJsxOpeningElement(node)){
           flush(parent, node.pos);
           const child = createHtmlNode(node.tagName.getText(sourceFile), node.attributes, false, node, parent);
@@ -118,8 +135,15 @@ export class JsxHtmlParserAdapter extends SearchEngine {
           const child = createHtmlNode(node.tagName.getText(sourceFile), node.attributes, true, node, parent);
           parent.appendChild(child);
           lastPos = node.end;
+        }else if(ts.isStringLiteralLike(node) || ts.isJSDoc(node) ){
+          flush(parent, node.pos);
+          const maybeHtml = parser.parse(node.getText(sourceFile), {offset : node.pos+1})!;
+          maybeHtml.childNodes.forEach(node=>parent.appendChild(node));
+          lastPos = node.end;
+        }else if(node.kind === ts.SyntaxKind.EndOfFileToken){
+          flush(parent, node.pos);
         }else{
-          traversal(parent, node);
+          traversal(parent, node, pos+1);
         }
       });
     };

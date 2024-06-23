@@ -9,8 +9,6 @@ import { Tempfile } from "./tempFileUtil";
 import { defaultSearchContext } from "../../model/search-context.model";
 
 suite("ReplaceAll Script Test", () => {
-  after(() => {});
-
   let testee = new SearchResultPanelProvider(
     new ReplacePreviewDocumentProvider(),
     new (class extends NodeHtmlParserAdaptor {

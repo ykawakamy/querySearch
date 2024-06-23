@@ -11,8 +11,10 @@ import { SearchEngine } from "./search-engine";
 import { QSNode } from "../model/qs-node.model";
 
 export class NodeHtmlParserAdaptor extends SearchEngine {
+  suffixes = [".html", ".htm"]; 
+
   canApply( uri: vscode.Uri){
-    return uri.path.endsWith(".html") || uri.path.endsWith(".htm");
+    return this.suffixes.some(suffix=>uri.path.endsWith(suffix));
   }
   createClone(v: QSNode): QSNode {
     if( v instanceof PHtmlElement || v instanceof PHtmlNode || v instanceof PHtmlDocument ){

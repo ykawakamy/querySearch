@@ -9,8 +9,6 @@ import { Tempfile } from "./tempFileUtil";
 import { defaultSearchContext } from "../../model/search-context.model";
 
 suite("Replace Script Test", () => {
-  after(() => {});
-
   let testee = new SearchResultPanelProvider(
     new ReplacePreviewDocumentProvider(),
     new (class extends NodeHtmlParserAdaptor {
@@ -44,9 +42,8 @@ suite("Replace Script Test", () => {
   }
 
   test("noop", async () => {
-    const document = await tempfile.createDocument({
-      content: "<ul><li>file</li></ul>",
-    });
+    const content = "<ul><li>file</li></ul>";
+    const document = await tempfile.createDocument({ content });
     const searchContext = "ul:has(li)";
     const replaceExpr = `
     `;
@@ -56,9 +53,8 @@ suite("Replace Script Test", () => {
   });
 
   test("remove and insert to AfterEnd", async () => {
-    const document = await tempfile.createDocument({
-      content: "<ul><li>file</li></ul>",
-    });
+    const content = "<ul><li>file</li></ul>";
+    const document = await tempfile.createDocument({ content });
     const searchContext = "ul:has(li)";
     const replaceExpr = `
       var s = $.querySelector("li");
