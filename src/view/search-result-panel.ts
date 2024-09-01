@@ -17,12 +17,9 @@ import { ReplacedEvent } from "../model/replaced-event";
 import _ from "lodash";
 
 export class SearchResultPanelProvider
-  implements vscode.TreeDataProvider<SearchResult>
-{
-  private _view?: vscode.TreeView<SearchResultTreeItem>;
+  implements vscode.TreeDataProvider<SearchResult> {
 
   latestSearchContext!: SearchContext;
-  private _context?: vscode.ExtensionContext;
   private _result: SearchResult[] = [];
 
   private _onDidChangeTreeData: vscode.EventEmitter<SearchResult | undefined> =
@@ -39,31 +36,8 @@ export class SearchResultPanelProvider
   }
 
   init(context: vscode.ExtensionContext) {
-    this._context = context;
-
-    const view = vscode.window.createTreeView<SearchResultTreeItem>(
-      Constants.VIEW_ID_SEARCHRESULT,
-      {
-        treeDataProvider: this,
-        showCollapseAll: true,
-        canSelectMany: true,
-      }
-    );
     context.subscriptions.push(
-      view.onDidCollapseElement((e) => {
-        e.element.isExpanded = false;
-      }),
-      view.onDidExpandElement((e) => {
-        e.element.isExpanded = true;
-      })
-    );
-    this._view = view;
-
-    context.subscriptions.push(
-      view,
-      vscode.window.onDidChangeActiveTextEditor(() =>
-        this.onActiveEditorChanged()
-      ),
+      vscode.window.onDidChangeActiveTextEditor(() => this.onActiveEditorChanged()),
       vscode.workspace.onDidChangeTextDocument((e) => this.onDocumentChanged(e))
     );
   }
@@ -206,7 +180,7 @@ export class SearchResultPanelProvider
         //   );
         // }
         const files = await vscode.workspace.findFiles(searchContext.includes, searchContext.excludes, undefined, token);
-        for( const file of files ){
+        for (const file of files) {
           await this.searchFile(file, searchContext);
         }
         this._onDidChangeTreeData.fire(undefined);
@@ -312,7 +286,7 @@ export class SearchResultPanelProvider
   }
 
   async replaceAllFiles(searchResults?: SearchResult[] | undefined) {
-    searchResults ??=this._result;
+    searchResults ??= this._result;
     const edit = new ReplaceEditTextDocument();
 
     try {

@@ -15,7 +15,7 @@ export function activate(context: vscode.ExtensionContext) {
   ];
   const previewProvider = new ReplacePreviewDocumentProvider(...searchEngines);
   const resultPanel = new SearchResultPanelProvider(previewProvider, ...searchEngines);
-  const treeProvider = new TreeviewOnWebviewProvider(context, resultPanel, Constants.VIEW_ID_SEARCHRESULT);
+  const treeProvider = new TreeviewOnWebviewProvider(context, resultPanel, Constants.VIEW_ID_SEARCHRESULT, { isUseVscodeOpenTextDocument: true });
   previewProvider.init(context);
   resultPanel.init(context);
   const queryPanel = new SearchQueryPanelProvider(context, resultPanel, treeProvider, previewProvider);

@@ -26,10 +26,6 @@
           "type": "webview",
           "id": "querySearch",
           "name": "%QueryPanel%"
-        },
-        {
-          "id": "searchResult",
-          "name": "%SearchResult%"
         }
       ]
     },
