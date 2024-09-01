@@ -1,3 +1,14 @@
+div#root {
+  height: 100%;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  height: 100%;
+}
+
 .query-area {
   display: flex;
   margin: 0px 12px 0px 0px;
@@ -7,26 +18,58 @@
   margin: 0px 12px 0px 20px;
 }
 
+.result-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 100px;
+  /* XXX: when `scrollbar-color` is set, `::-webkit-scrollbar` to be ignored.
+   * @see https://github.com/w3c/csswg-drafts/issues/9856#issuecomment-2035809422
+   */
+  scrollbar-color: initial;
+}
+
+.result-area::-webkit-scrollbar {
+  width:10px;
+  height:10px;
+}
+
+.result-area::-webkit-scrollbar-thumb{
+  background: var(--vscode-editor-background);
+}
+
+.result-area:hover::-webkit-scrollbar-thumb{
+  background: var(--vscode-scrollbarSlider-background);
+}
+
+.replace-toggle-wrapper{
+  margin: 0px 2px;
+  display: flex;
+}
 .replace-toggle {
   align-self: stretch;
-  margin: auto 0px;
   flex-basis: content;
+  outline-offset: -1px;
+}
+
+#replace-expr {
+  resize: vertical;
 }
 
 .filter-toggle {
   position: absolute;
-  right: -2px;
+  right: 0px;
   cursor: pointer;
   width: 25px;
   height: 16px;
+}
+
+.filter-toggle-wrapper {
+  min-height: 1rem;
 }
 
 .fill-container {
   width: 100%;
 }
 
-.active_option {
-  color: var(--vscode-inputOption-activeForeground);
-  border-color: var(--vscode-inputOption-activeBorder);
-  background-color: var(--vscode-inputOption-activeBackground);
-}
+

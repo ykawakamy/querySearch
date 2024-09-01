@@ -74,6 +74,7 @@ export class SearchResult extends SearchResultTreeItem {
     return {
       resourceUri: this.resourceUri,
       description: true,
+      iconPath: vscode.ThemeIcon.File,
       collapsibleState: this.isExpanded
         ? vscode.TreeItemCollapsibleState.Expanded
         : vscode.TreeItemCollapsibleState.Collapsed,
@@ -117,6 +118,7 @@ export class SearchResultItem extends SearchResultTreeItem {
     return {
       label: this.label,
       resourceUri: this.resourceUri,
+      iconPath: vscode.ThemeIcon.Folder,
       collapsibleState:
         this.items.length === 0
           ? vscode.TreeItemCollapsibleState.None

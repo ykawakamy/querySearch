@@ -8,7 +8,7 @@
         "@typescript-eslint"
     ],
     "rules": {
-        "@typescript-eslint/naming-convention": "warn",
+        "@typescript-eslint/naming-convention": "off",
         "@typescript-eslint/no-floating-promises": "error",
         "@typescript-eslint/semi": "warn",
         "curly": "warn",

@@ -66,36 +66,6 @@ export class SearchResultPanelProvider
       ),
       vscode.workspace.onDidChangeTextDocument((e) => this.onDocumentChanged(e))
     );
-
-    context.subscriptions.push(
-      vscode.commands.registerCommand(
-        Constants.COMMAND_QUERYSEARCH_REPLACE,
-        async (result: SearchResultItem) => {
-          if (!result.isCompleted) {
-            result.isCompleted = true;
-            await this.replace(result);
-          }
-        }
-      ),
-      vscode.commands.registerCommand(
-        Constants.COMMAND_QUERYSEARCH_REPLACEALL,
-        async (result: SearchResult) => {
-          await this.replaceAll(result);
-        }
-      ),
-      vscode.commands.registerCommand(
-        Constants.COMMAND_QUERYSEARCH_REPLACEFILES,
-        async () => {
-          await this.replaceAllFiles(this._result);
-        }
-      ),
-      vscode.commands.registerCommand(
-        Constants.COMMAND_QUERYSEARCH_COPY_RESULT,
-        async () => {
-          await vscode.env.clipboard.writeText(await this.getResultText());
-        }
-      )
-    );
   }
 
   clearResult() {
@@ -104,7 +74,7 @@ export class SearchResultPanelProvider
   }
   addResult(r: SearchResult) {
     this._result.push(r);
-    this._onDidChangeTreeData.fire(undefined);
+    // this._onDidChangeTreeData.fire(undefined);
   }
 
   private async onActiveEditorChanged(): Promise<void> {
@@ -216,35 +186,31 @@ export class SearchResultPanelProvider
 
         this.clearResult();
 
-        const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
-        for (const workspaceFolder of workspaceFolders.filter(
-          (folder) => folder.uri.scheme === "file"
-        )) {
-          const gitIgnorePatterns = await this.getIgnorePattern(
-            workspaceFolder.uri
-          );
-          const filter = await this.filter(
-            workspaceFolder,
-            gitIgnorePatterns,
-            searchContext
-          );
-          await this.searchDirectory(
-            filter,
-            workspaceFolder.uri,
-            searchContext,
-            token
-          );
+        // const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
+        // for (const workspaceFolder of workspaceFolders.filter(
+        //   (folder) => folder.uri.scheme === "file"
+        // )) {
+        //   const gitIgnorePatterns = await this.getIgnorePattern(
+        //     workspaceFolder.uri
+        //   );
+        //   const filter = await this.filter(
+        //     workspaceFolder,
+        //     gitIgnorePatterns,
+        //     searchContext
+        //   );
+        //   await this.searchDirectory(
+        //     filter,
+        //     workspaceFolder.uri,
+        //     searchContext,
+        //     token
+        //   );
+        // }
+        const files = await vscode.workspace.findFiles(searchContext.includes, searchContext.excludes, undefined, token);
+        for( const file of files ){
+          await this.searchFile(file, searchContext);
         }
+        this._onDidChangeTreeData.fire(undefined);
         progress.report({ increment: 100 });
-        const recursiveOmit = (root: any) => _.transform(root, (r: any, v: any, k: string | number) => {
-          if (typeof k !== 'string' || !k.startsWith("_")) {
-            r[k] = _.isObject(v) ? recursiveOmit(v) : v;
-          }
-        });
-        await webview?.postMessage({
-          type: "setList",
-          list: recursiveOmit(this._result),
-        });
       }
     );
   }
@@ -345,7 +311,8 @@ export class SearchResultPanelProvider
     await this.replaceAllFiles([searchResult]);
   }
 
-  async replaceAllFiles(searchResults: SearchResult[]) {
+  async replaceAllFiles(searchResults?: SearchResult[] | undefined) {
+    searchResults ??=this._result;
     const edit = new ReplaceEditTextDocument();
 
     try {

@@ -10,7 +10,8 @@ import { SearchResultPanelProvider } from "./search-result-panel";
 import path = require("path");
 import { WebViewEvent } from "../model/webview-event";
 import { SearchQueryPanelState } from "../model/search-query-panel-state";
-
+import { TreeviewOnWebviewProvider } from "treeview-on-vscode-webview/dist/TreeviewOnWebviewProvider";
+import { IconThemeForWebview, loadIconTheme } from "treeview-on-vscode-webview/dist/ContributesUtil";
 export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
   public static readonly viewId = Constants.VIEW_ID_QUERY;
 
@@ -31,6 +32,7 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
   constructor(
     private _context: vscode.ExtensionContext,
     private resultPanel: SearchResultPanelProvider,
+    private treeviewProvider: TreeviewOnWebviewProvider<object>,
     private previewProvider: ReplacePreviewDocumentProvider
   ) {
     this._extensionUri = _context.extensionUri;
@@ -45,26 +47,15 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
         SearchQueryPanelProvider.viewId,
         this
       ),
-      vscode.commands.registerCommand(
-        Constants.COMMAND_QUERYSEARCH_OPENFILE,
-        (item: SearchResult | SearchResultItem) => this.openResource(item)
-      ),
-      vscode.commands.registerCommand(
-        Constants.COMMAND_QUERYSEARCH_PREVIEWFILE,
-        (item: SearchResult | SearchResultItem) =>
-          this.searchContext.replaceContext.replaceToggle
-            ? this.openReplacePreview(item)
-            : this.openResource(item)
-      )
     );
   }
 
   openResource(item: SearchResult | SearchResultItem) {
     const document = item.resourceUri;
     if (item instanceof SearchResult) {
-      void vscode.window.showTextDocument(document);
+      void vscode.window.showTextDocument(document, { preserveFocus: true });
     } else {
-      void vscode.window.showTextDocument(document, { selection: item.range });
+      void vscode.window.showTextDocument(document, { preserveFocus: true, selection: item.range });
     }
   }
 
@@ -73,20 +64,29 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
     void this.previewProvider.openReplacePreview(item, searchContext);
   }
 
-  public resolveWebviewView(
+  async resolveWebviewView(
     webviewView: vscode.WebviewView,
     context: vscode.WebviewViewResolveContext<SearchQueryPanelState>,
     _token: vscode.CancellationToken
   ) {
+    const iconThemeId = vscode.workspace.getConfiguration("workbench").get<string>("iconTheme");
+    const exts = vscode.extensions.all;
+    const iconTheme = await loadIconTheme(webviewView, exts, iconThemeId);
+    if (!iconTheme) {
+      throw new Error("failed to loadIconTheme.");
+    }
+    await this.treeviewProvider.attactWebview(webviewView);
+
     webviewView.webview.options = {
       // Allow scripts in the webview
       enableScripts: true,
-      localResourceRoots: [this._extensionUri],
+      localResourceRoots: [this._extensionUri, iconTheme.uri],
     };
 
     webviewView.webview.html = this._getHtmlForWebview(
       webviewView.webview,
-      context.state
+      context.state,
+      iconTheme
     );
 
     webviewView.webview.onDidReceiveMessage(async (data: WebViewEvent) => {
@@ -95,8 +95,7 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
           this.searchContext = {
             ...data,
           };
-          await vscode.commands.executeCommand(
-            "setContext",
+          await this.treeviewProvider.setContext(
             Constants.SET_CONTEXT_REPLACE_MODE,
             this.searchContext.replaceContext.replaceToggle
           );
@@ -108,8 +107,7 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
             ...this.searchContext.replaceContext,
             ...data,
           };
-          await vscode.commands.executeCommand(
-            "setContext",
+          await this.treeviewProvider.setContext(
             Constants.SET_CONTEXT_REPLACE_MODE,
             this.searchContext.replaceContext.replaceToggle
           );
@@ -120,9 +118,7 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
   }
 
   private _getHtmlForWebview(
-    webview: vscode.Webview,
-    state?: SearchQueryPanelState
-  ) {
+    webview: vscode.Webview, state: SearchQueryPanelState | undefined, iconTheme: IconThemeForWebview) {
     // Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
     const scriptUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, "dist", "webview.js")
@@ -135,6 +131,9 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
     );
     const styleMainUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, "dist", "webview.css")
+    );
+    const treeviewCssUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this._extensionUri, "node_modules", "treeview-on-vscode-webview", "src", "webview", "vscc-treeview.css")
     );
     const codiconsUri = webview.asWebviewUri(
       vscode.Uri.joinPath(
@@ -155,12 +154,14 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
       <head>
         <meta charset="UTF-8">
         <meta http-equiv="Content-Security-Policy" 
-          content="default-src 'none'; style-src ${webview.cspSource} 'nonce-${nonce}'; font-src ${webview.cspSource}; script-src 'nonce-${nonce}'; connect-src ${webview.cspSource};">
+          content="default-src 'none'; style-src ${webview.cspSource} 'nonce-${nonce}'; font-src ${webview.cspSource}; img-src ${webview.cspSource}; script-src 'nonce-${nonce}'; connect-src ${webview.cspSource};">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta property="csp-nonce" content="${nonce}">
-        <link href="${styleResetUri}" rel="stylesheet">
         <link href="${styleMainUri}" rel="stylesheet">
+        <link href="${styleVSCodeUri}" rel="stylesheet">
         <link href="${codiconsUri}" rel="stylesheet">
+        <link href="${treeviewCssUri}" rel="stylesheet">
+        <style nonce="${nonce}">${iconTheme.styleContent.content}</style>
         <title>Search Query</title>
       </head>
       <body>

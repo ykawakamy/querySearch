@@ -1,5 +1,9 @@
 import type { WebviewApi } from "vscode-webview";
 
+declare global {
+  var vscodeWebviewApi: WebviewApi<unknown>;
+}
+
 /**
  * A utility wrapper around the acquireVsCodeApi() function, which enables
  * message passing and state management between the webview and extension
@@ -16,7 +20,8 @@ class VSCodeAPIWrapper {
     // Check if the acquireVsCodeApi function exists in the current development
     // context (i.e. VS Code development window or web browser)
     if (typeof acquireVsCodeApi === "function") {
-      this.vsCodeApi = acquireVsCodeApi();
+      globalThis.vscodeWebviewApi ??= acquireVsCodeApi();
+      this.vsCodeApi = globalThis.vscodeWebviewApi;
     }
   }
 
