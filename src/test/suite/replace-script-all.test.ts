@@ -39,7 +39,7 @@ suite("ReplaceAll Script Test", () => {
         replaceToggle: false,
       },
     };
-    const result = new NodeHtmlParserAdaptor().search(document, searchContext);
+    const result = new NodeHtmlParserAdaptor().search(document.getText(), document.uri, searchContext);
     testee.latestSearchContext = searchContext;
     await testee.replaceAll(result!);
     assert.equal(document.getText(), expected);

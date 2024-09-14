@@ -18,56 +18,11 @@ export class SearchResultTreeItem extends vscode.TreeItem {
 }
 
 export class SearchResult extends SearchResultTreeItem {
-  constructor(uri: vscode.Uri, baseItem: SearchResultItem);
   constructor(
     uri: vscode.Uri,
-    document: vscode.TextDocument,
-    nodes: QSNode[],
-    searchContext: SearchContext
-  );
-  constructor(
-    uri: vscode.Uri,
-    document: vscode.TextDocument | SearchResultItem,
-    nodes?: QSNode[],
-    public _searchContext?: SearchContext
+    public _searchContext: SearchContext
   ) {
     super(uri);
-    if (document instanceof SearchResultItem) {
-      this.items = [document];
-      return;
-    }
-    if (!nodes || !_searchContext) {
-      throw new Error();
-    }
-
-    const sortedNodes = nodes.sort(
-      (a: QSNode, b: QSNode) =>
-        (a?.range?.startOpenTag ?? 0) - (b?.range?.startOpenTag ?? 0)
-    );
-
-    let stack: SearchResultItem[] = [];
-    let index = 0;
-    for (const node of sortedNodes) {
-      const item = new SearchResultItem(document, node, _searchContext);
-      let parentIdx = stack.findLastIndex((prev) => {
-        const s = Math.min(prev.startOffset, item.startOffset);
-        const e = Math.max(prev.endOffset, item.endOffset);
-        const c = item.endOffset - item.startOffset;
-        const p = prev.endOffset - prev.startOffset;
-        return e - s < c + p;
-      });
-      if (parentIdx !== -1) {
-        const parent = stack[parentIdx];
-        parent.items.push(item);
-        item._parent = parent;
-        stack.splice(parentIdx + 1, Infinity, item);
-      } else {
-        this.items.push(item);
-        item._parent = this;
-        stack = [item];
-      }
-      item.index = index++;
-    }
   }
 
   toTreeItem(): vscode.TreeItem {
@@ -89,27 +44,22 @@ export class SearchResult extends SearchResultTreeItem {
 }
 
 export class SearchResultItem extends SearchResultTreeItem {
-  _parent!: SearchResult | SearchResultItem;
   isCompleted = false;
   index = 0;
   startOffset: number;
   endOffset: number;
   label: string;
-  range: vscode.Range;
+  parent!: SearchResult | SearchResultItem;
 
   constructor(
-    document: vscode.TextDocument,
+    uri: vscode.Uri,
     public tag: QSNode,
     public searchContext: SearchContext
   ) {
-    super(document.uri);
+    super(uri);
     const { startOffset, endOffset } = htmlUtil.getOffsetOfCloseTag(tag);
     this.startOffset = startOffset;
     this.endOffset = endOffset;
-    this.range = new vscode.Range(
-      document.positionAt(startOffset),
-      document.positionAt(endOffset)
-    );
     this.isExpanded = false;
     this.label = tag.outerHTML;
   }
@@ -123,8 +73,8 @@ export class SearchResultItem extends SearchResultTreeItem {
         this.items.length === 0
           ? vscode.TreeItemCollapsibleState.None
           : this.isExpanded
-          ? vscode.TreeItemCollapsibleState.Expanded
-          : vscode.TreeItemCollapsibleState.Collapsed,
+            ? vscode.TreeItemCollapsibleState.Expanded
+            : vscode.TreeItemCollapsibleState.Collapsed,
       contextValue: ContextValues.result,
       command: {
         command: Constants.COMMAND_QUERYSEARCH_PREVIEWFILE,
@@ -132,5 +82,12 @@ export class SearchResultItem extends SearchResultTreeItem {
         arguments: [this],
       },
     };
+  }
+
+  getRange(document: vscode.TextDocument): vscode.Range {
+    return new vscode.Range(
+      document.positionAt(this.startOffset),
+      document.positionAt(this.endOffset),
+    );
   }
 }

@@ -63,7 +63,7 @@ export class ReplacePreviewDocumentProvider
 
       const searchResult =
         this.selectItem instanceof SearchResultItem
-          ? this.selectItem._parent
+          ? this.selectItem.parent
           : this.selectItem;
       if (!searchResult) {
         return "";
@@ -85,8 +85,8 @@ export class ReplacePreviewDocumentProvider
     searchContext: SearchContext
   ) {
     const preview = getPreviewUri(item.resourceUri, searchContext, item);
-    const document = vscode.workspace.openTextDocument(item.resourceUri);
-    const range = item instanceof SearchResultItem ? item.range : undefined;
+    const document = await vscode.workspace.openTextDocument(item.resourceUri);
+    const range = item instanceof SearchResultItem ? item.getRange(document) : undefined;
     const options: vscode.TextDocumentShowOptions = {
       selection: range,
       preserveFocus: true,

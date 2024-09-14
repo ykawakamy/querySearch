@@ -50,12 +50,13 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
     );
   }
 
-  openResource(item: SearchResult | SearchResultItem) {
-    const document = item.resourceUri;
+  async openResource(item: SearchResult | SearchResultItem) {
+    const uri = item.resourceUri;
     if (item instanceof SearchResult) {
-      void vscode.window.showTextDocument(document, { preserveFocus: true });
+      void vscode.window.showTextDocument(uri, { preserveFocus: true });
     } else {
-      void vscode.window.showTextDocument(document, { preserveFocus: true, selection: item.range });
+      const document = await vscode.workspace.openTextDocument(uri);
+      void vscode.window.showTextDocument(uri, { preserveFocus: true, selection: item.getRange(document) });
     }
   }
 

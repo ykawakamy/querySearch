@@ -35,7 +35,7 @@ suite("Replace Script Test for Javascript like file", () => {
         replaceToggle: false,
       },
     };
-    const result = new JsxHtmlParserAdapter().search(document, searchContext);
+    const result = new JsxHtmlParserAdapter().search(document.getText(), document.uri, searchContext);
     testee.latestSearchContext = searchContext;
     if( result){
       // for( const item of result.items){

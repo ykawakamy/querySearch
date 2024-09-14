@@ -18,13 +18,43 @@ export abstract class SearchEngine {
   abstract getReplacedText(node: QSNode): string;
 
   search(
-    content$: vscode.TextDocument,
+    content: string,
+    uri: vscode.Uri,
     searchContext: SearchContext
   ): SearchResult | null {
-    const content = content$.getText();
     const result = this.searchHtml(content, searchContext);
     if (result?.length > 0) {
-      const r = new SearchResult(content$.uri, content$, result, searchContext);
+      const sortedNodes = result.sort(
+        (a: QSNode, b: QSNode) =>
+          (a?.range?.startOpenTag ?? 0) - (b?.range?.startOpenTag ?? 0)
+      );
+  
+      let stack: SearchResultItem[] = [];
+      let index = 0;
+      const r = new SearchResult(uri, searchContext);
+      const items = [];
+      for (const node of sortedNodes) {
+        const item = new SearchResultItem(uri, node, searchContext);
+        let parentIdx = stack.findLastIndex((prev) => {
+          const s = Math.min(prev.startOffset, item.startOffset);
+          const e = Math.max(prev.endOffset, item.endOffset);
+          const c = item.endOffset - item.startOffset;
+          const p = prev.endOffset - prev.startOffset;
+          return e - s < c + p;
+        });
+        if (parentIdx !== -1) {
+          const parent = stack[parentIdx];
+          parent.items.push(item);
+          item.parent = parent;
+          stack.splice(parentIdx + 1, Infinity, item);
+        } else {
+          items.push(item);
+          stack = [item];
+        }
+        item.index = index++;
+      }
+
+      r.items = items;
       return r;
     }
     return null;

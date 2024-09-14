@@ -85,7 +85,7 @@ export class SearchResultPanelProvider
       return;
     }
 
-    const r = searchEngine.search(document, this.latestSearchContext);
+    const r = searchEngine.search(document.getText(), uri, this.latestSearchContext);
     this.mergeResult(new ReplacedEvent(uri, index, r));
     this._onDidChangeTreeData.fire(undefined);
   }
@@ -319,8 +319,9 @@ export class SearchResultPanelProvider
     if (!searchEngine) {
       return null;
     }
-    const content$ = await vscode.workspace.openTextDocument(uri);
-    const result = searchEngine.search(content$, searchContext);
+
+    const content = await readFileToString(uri);
+    const result = searchEngine.search(content, uri, searchContext);
     return result;
   }
   private async getIgnorePattern(workspaceFolder: vscode.Uri) {
@@ -342,7 +343,8 @@ export class SearchResultPanelProvider
     if (!item) {
       return;
     }
-    const searchResult = new SearchResult(item.resourceUri, item);
+    const searchResult = new SearchResult(item.resourceUri, item.searchContext);
+    searchResult.items = [item];
 
     await this.replaceAll(searchResult);
   }
@@ -396,3 +398,16 @@ export class SearchResultPanelProvider
     return result;
   }
 }
+
+// TODO: vscode.workspace.openTextDocument was trigger code analyzer(e.g. ts language server)
+async function readFileToString(uri: vscode.Uri): Promise<string> {
+  try{
+    const bytes = await vscode.workspace.fs.readFile(uri);
+    return new TextDecoder(undefined, {fatal: true}).decode(bytes);
+  }catch(e){
+    // fallback
+    const document = await vscode.workspace.openTextDocument(uri);
+    return document.getText();
+  }
+}
+
