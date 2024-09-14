@@ -52,12 +52,17 @@ export abstract class SearchEngine {
 
     const $ = this.createClone(baseTag);
     const original = this.getReplacedText($);
-    const vmContext = { $: $, document:$.parentNode };
+    const vmContext = { $: $, document: $.parentNode };
+    let modified;
     vm.createContext(vmContext);
-    const result = vm.runInContext(replaceExpr, vmContext, {
-      timeout: 1000,
-    });
-    const modified = this.getReplacedText($);
+    try {
+      const result = vm.runInContext(replaceExpr, vmContext, {
+        timeout: 1000,
+      });
+      modified = this.getReplacedText($);
+    } catch (e) {
+      modified = vscode.l10n.t(`failed to replace. [cause: {0}]`, "" + e);
+    }
     if (original !== modified) {
       await edit.replace(document.uri, this.getRange(baseTag), modified);
     }
