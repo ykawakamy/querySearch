@@ -13,6 +13,9 @@ importers:
 
   .:
     dependencies:
+      '@react-hook/event':
+        specifier: ../vscode-webview-treeview/treeview-onwebview/node_modules/@react-hook/event
+        version: link:../vscode-webview-treeview/treeview-onwebview/node_modules/@react-hook/event
       '@vscode/codicons':
         specifier: ^0.0.35
         version: 0.0.35
@@ -34,11 +37,14 @@ importers:
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
+      minimatch:
+        specifier: ^10.0.1
+        version: 10.0.1
       react:
-        specifier: link:..\vscode-webview-treeview\treeview-onwebview\node_modules\react
+        specifier: ../vscode-webview-treeview/treeview-onwebview/node_modules/react
         version: link:../vscode-webview-treeview/treeview-onwebview/node_modules/react
       react-dom:
-        specifier: link:..\vscode-webview-treeview\treeview-onwebview\node_modules\react-dom
+        specifier: ../vscode-webview-treeview/treeview-onwebview/node_modules/react-dom
         version: link:../vscode-webview-treeview/treeview-onwebview/node_modules/react-dom
       scss-parser:
         specifier: ^1.0.6
@@ -56,6 +62,9 @@ importers:
       '@types/lodash':
         specifier: ^4.17.7
         version: 4.17.7
+      '@types/minimatch':
+        specifier: ^5.1.2
+        version: 5.1.2
       '@types/mocha':
         specifier: ^10.0.7
         version: 10.0.7

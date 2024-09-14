@@ -16,7 +16,7 @@ body {
   height: 100vh;
 }
 
-* { 
+* {
   box-sizing: border-box;
 }
 
@@ -121,6 +121,10 @@ textarea::placeholder {
   color: var(--vscode-input-placeholderForeground);
 }
 
+.input-container{
+  width: 100%;
+}
+
 .input-wrapper {
   display: flex;
   align-items: center;
@@ -134,10 +138,11 @@ textarea::placeholder {
 
 .input-wrapper:focus-within {
   opacity: 1;
-  outline-color: var(--vscode-focusBorder);
-  outline-offset: -1px;
-  outline-style: solid;
-  outline-width: 1px;
+  border-color: var(--vscode-focusBorder);
+}
+
+.input-container.error .input-wrapper {
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
 }
 
 .input-wrapper>input,
@@ -149,6 +154,10 @@ textarea::placeholder {
   outline: none;
   box-sizing: border-box;
   border: none;
+}
+
+.input-action {
+  margin: 1px;
 }
 
 .input-action>button {
@@ -174,4 +183,33 @@ textarea::placeholder {
   color: var(--vscode-inputOption-activeForeground);
   border-color: var(--vscode-inputOption-activeBorder);
   background-color: var(--vscode-inputOption-activeBackground);
+}
+
+.input-error-wrapper{
+  position: relative;
+}
+
+.input-container .input-error{
+  display: none;
+  
+  position: absolute;
+  box-sizing: border-box;
+  font-size: 12px;
+  line-height: 17px;
+  margin-top: -1px;
+  overflow: hidden;
+  padding: .4em;
+  text-align: left;
+  width: 100%;
+  word-wrap: break-word;
+
+}
+
+.input-container:focus-within .input-error {
+  display: block;
+
+  background-color: var(--vscode-inputValidation-errorBackground);
+  color: var(--vscode-inputValidation-errorForeground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+
 }

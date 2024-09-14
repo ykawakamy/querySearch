@@ -4,7 +4,7 @@
   "description": "%description%",
   "version": "0.0.8",
   "engines": {
-    "vscode": "^1.83.0"
+    "vscode": "^1.92.0"
   },
   "publisher": "yuyakawakamy",
   "repository": {
@@ -107,13 +107,13 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run package",
+    "vscode:prepublish": "pnpm run package",
     "compile": "node scripts/build.mjs",
     "watch": "node scripts/build.mjs --watch",
-    "package": "tsc ",
+    "package": "npx tsc ",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
     "lint": "eslint src --ext ts",
     "test": "node --enable-source-maps ./out/test/runTest.js",
     "l10n:generate": "npx @vscode/l10n-dev export --outDir ./l10n ./src"
@@ -121,6 +121,7 @@
   "devDependencies": {
     "@types/glob": "^8.1.0",
     "@types/lodash": "^4.17.7",
+    "@types/minimatch": "^5.1.2",
     "@types/mocha": "^10.0.7",
     "@types/node": "~20.16.1",
     "@types/react": "^18.3.4",
@@ -142,6 +143,7 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
+    "@react-hook/event": "^1.2.6",
     "@vscode/codicons": "^0.0.35",
     "@vscode/l10n": "^0.0.18",
     "css-select": "^5.1.0",
@@ -149,6 +151,7 @@
     "html-parser": "link:..\\html-parser",
     "ignore": "^5.3.2",
     "lodash": "^4.17.21",
+    "minimatch": "^10.0.1",
     "react": "link:..\\vscode-webview-treeview\\treeview-onwebview\\node_modules\\react",
     "react-dom": "link:..\\vscode-webview-treeview\\treeview-onwebview\\node_modules\\react-dom",
     "scss-parser": "^1.0.6",
