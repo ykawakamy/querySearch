@@ -134,7 +134,9 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
       vscode.Uri.joinPath(this._extensionUri, "dist", "webview.css")
     );
     const treeviewCssUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, "node_modules", "treeview-on-vscode-webview", "src", "webview", "vscc-treeview.css")
+      // TODO: vsce package is not support symlink. see https://github.com/microsoft/vscode-vsce/issues/308
+      vscode.Uri.joinPath(this._extensionUri, "dist", "vscc-treeview.css")
+      // vscode.Uri.joinPath(this._extensionUri, "node_modules", "treeview-on-vscode-webview", "src", "webview", "vscc-treeview.css")
     );
     const codiconsUri = webview.asWebviewUri(
       vscode.Uri.joinPath(

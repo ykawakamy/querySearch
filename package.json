@@ -148,14 +148,14 @@
     "@vscode/l10n": "^0.0.18",
     "css-select": "^5.1.0",
     "css-what": "^6.1.0",
-    "html-parser": "link:..\\html-parser",
+    "html-parser": "file:..\\html-parser",
     "ignore": "^5.3.2",
     "lodash": "^4.17.21",
     "minimatch": "^10.0.1",
-    "react": "link:..\\vscode-webview-treeview\\treeview-onwebview\\node_modules\\react",
-    "react-dom": "link:..\\vscode-webview-treeview\\treeview-onwebview\\node_modules\\react-dom",
+    "react": "^18.3.1",
+    "react-dom": "18.3.1",
     "scss-parser": "^1.0.6",
-    "treeview-on-vscode-webview": "link:..\\vscode-webview-treeview\\treeview-onwebview",
+    "treeview-on-vscode-webview": "file:..\\vscode-webview-treeview\\treeview-onwebview",
     "vscode-uri": "^3.0.8"
   },
   "pnpm": {
