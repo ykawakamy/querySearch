@@ -1,7 +1,8 @@
 import * as esbuild from "esbuild";
 import fs from 'node:fs';
 
-const sourcemap = false;
+const isProdution = process.argv.includes("production");
+const sourcemap = !isProdution;
 
       // TODO: vsce package is not support symlink. see https://github.com/microsoft/vscode-vsce/issues/308
 fs.copyFileSync("node_modules/treeview-on-vscode-webview/src/webview/vscc-treeview.css", "dist/vscc-treeview.css");
