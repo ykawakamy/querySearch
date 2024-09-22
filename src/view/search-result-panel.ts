@@ -99,6 +99,7 @@ export class SearchResultPanelProvider
     }
     return Promise.resolve(this._result);
   }
+
   private mergeResult(replaceEvent: ReplacedEvent) {
     if (!replaceEvent.newResult) {
       this._result.splice(replaceEvent.index, 1);
@@ -126,7 +127,7 @@ export class SearchResultPanelProvider
     }
     recursive(oldRootItems, newRootItems);
     this._result[replaceEvent.index] = replaceEvent.newResult;
-    this.previewProvider.refresh(
+    void this.previewProvider.refresh(
       replaceEvent.uri,
       change,
       this.latestSearchContext

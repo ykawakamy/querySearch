@@ -14,11 +14,18 @@ import { ReplaceEditMemFsTextDocument } from "../engine/replace-edit";
 import { SearchContext } from "../model/search-context.model";
 import { SearchResult, SearchResultItem, SearchResultTreeItem } from "../model/search-result.model";
 import * as path from "path";
+
+export interface OpenedDiffContext {
+  sourceUri: vscode.Uri;
+  previewUri: vscode.Uri;
+  searchItem: SearchResultTreeItem;
+}
 export class ReplacePreviewDocumentProvider
-  implements TextDocumentContentProvider, Disposable
-{
+  implements TextDocumentContentProvider, Disposable {
   searchEngines: SearchEngine[];
-  selectItem!: SearchResultTreeItem;
+
+  openedDiffs: OpenedDiffContext[] = [];
+
   constructor(..._searchEngines: SearchEngine[]) {
     this.searchEngines = _searchEngines;
   }
@@ -31,8 +38,28 @@ export class ReplacePreviewDocumentProvider
       ),
       vscode.workspace.registerFileSystemProvider("memfs", new MemFS(), {
         isReadonly: true,
-      })
+      }),
+      vscode.workspace.onDidCloseTextDocument((document) => {
+        const uri = document.uri.toString();
+        this.openedDiffs = this.openedDiffs.filter(x => {
+          const preserve = x.sourceUri.toString() !== uri
+            || x.previewUri.toString() !== uri;
+            if(!preserve){
+              console.log("close %s", x.previewUri.toString());
+            }
+          return preserve;
+        });
+      }),
     );
+    // TODO: 
+    // vscode.workspace.onDidChangeTextDocument((e) => {
+    //   if (e.contentChanges.length === 0) {
+    //     return;
+    //   }
+    //   if (this.preview && e.document.uri.toString() === this.uri?.toString()) {
+    //     this._onDidChange.fire(this.preview);
+    //   }
+    // });
   }
 
   private _onDidChange = new EventEmitter<Uri>();
@@ -45,7 +72,7 @@ export class ReplacePreviewDocumentProvider
   }
 
   async provideTextDocumentContent(
-    uri: vscode.Uri,
+    previewUri: vscode.Uri,
     token: vscode.CancellationToken
   ): Promise<string> {
     if (token.isCancellationRequested) {
@@ -53,24 +80,26 @@ export class ReplacePreviewDocumentProvider
     }
 
     try {
-      const { context } = JSON.parse(uri.query);
-      const searchContext: SearchContext = context;
-      const searchEngine = this.searchEngines.find((v) => v.canApply(uri));
+      const searchContext: SearchContext = JSON.parse(previewUri.query).context;
+      const searchEngine = this.searchEngines.find((v) => v.canApply(previewUri));
       if (!searchEngine) {
         console.warn("can not found appliable engine.");
-        return "";
+        return vscode.l10n.t("can not found appliable engine.");
       }
 
-      const searchResult =
-        this.selectItem instanceof SearchResultItem
-          ? this.selectItem.parent
-          : this.selectItem;
-      if (!searchResult) {
+      const context = this.openedDiffs.find(x => x.previewUri.toString() === previewUri.toString());
+      if (!context) {
         return "";
+      }
+      const searchResult = context.searchItem instanceof SearchResultItem
+          ? context.searchItem.parent
+          : context.searchItem;
+      if (!searchResult) {
+        return vscode.l10n.t("not found result.");;
       }
       const edit = new ReplaceEditMemFsTextDocument();
       const text = await edit.openTextDocument(
-        Uri.from({ scheme: uri.fragment, path: uri.path })
+        Uri.from({ scheme: previewUri.fragment, path: previewUri.path })
       );
       await searchEngine.replace(searchResult, searchContext.replaceContext.replace, edit);
       await edit.applyEdit();
@@ -84,7 +113,7 @@ export class ReplacePreviewDocumentProvider
     item: SearchResult | SearchResultItem,
     searchContext: SearchContext
   ) {
-    const preview = getPreviewUri(item.resourceUri, searchContext, item);
+    const previewUri = getPreviewUri(item.resourceUri, searchContext, item);
     const document = await vscode.workspace.openTextDocument(item.resourceUri);
     const range = item instanceof SearchResultItem ? item.getRange(document) : undefined;
     const options: vscode.TextDocumentShowOptions = {
@@ -94,23 +123,35 @@ export class ReplacePreviewDocumentProvider
     };
     const basefile = path.basename(item.resourceUri.fsPath);
 
-    this.selectItem = item;
+    const context = this.openedDiffs.find(x => x.previewUri.toString() === previewUri.toString());
+    if (context) {
+      context.searchItem = item;
+      this._onDidChange.fire(context.previewUri);
+    }else{
+      this.openedDiffs.push({
+        searchItem: item,
+        previewUri: previewUri,
+        sourceUri: item.resourceUri,
+      });
+    }
 
     await vscode.commands.executeCommand(
       "vscode.diff",
       item.resourceUri,
-      preview,
+      previewUri,
       vscode.l10n.t(`{0} ↔ [replaced] (Replace Preview)`, basefile),
       options
     );
   }
 
-  refresh(resourceUri: vscode.Uri, item: SearchResultTreeItem, searchContext: SearchContext) {
-    this.selectItem = item;
-
-    this._onDidChange.fire(
-      getPreviewUri(resourceUri, searchContext, this.selectItem)
-    );
+  async refresh(resourceUri: vscode.Uri, item: SearchResultTreeItem, searchContext: SearchContext) {
+    const preview = getPreviewUri(item.resourceUri, searchContext, item);
+    const context = this.openedDiffs.find(x => x.previewUri.toString() === preview.toString());
+    if (context) {
+      context.searchItem = item;
+      this._onDidChange.fire(context.previewUri);
+      console.log("refresh %s", resourceUri.toString() );
+    }
   }
 }
 
@@ -119,12 +160,10 @@ function getPreviewUri(
   searchContext: SearchContext,
   item?: SearchResultTreeItem
 ) {
-  const index = item instanceof SearchResultItem ? item.index : undefined;
-
   return vscode.Uri.from({
     scheme: Constants.SCHEMA_PREVIEW,
     path: resource.path,
     fragment: resource.scheme,
-    query: JSON.stringify({ context: searchContext, index: index }),
+    query: JSON.stringify({ context: searchContext }),
   });
 }

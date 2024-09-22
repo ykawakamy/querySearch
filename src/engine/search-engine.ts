@@ -50,6 +50,7 @@ export abstract class SearchEngine {
         } else {
           items.push(item);
           stack = [item];
+          item.parent = r;
         }
         item.index = index++;
       }

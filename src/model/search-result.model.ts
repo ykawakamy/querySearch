@@ -5,11 +5,10 @@ import { htmlUtil } from "../util/html-util";
 import path = require("path");
 import { QSNode } from "./qs-node.model";
 
-export class SearchResultTreeItem extends vscode.TreeItem {
+export class SearchResultTreeItem {
   items: SearchResultItem[] = [];
   isExpanded: boolean = false;
-  constructor(public resourceUri: vscode.Uri) {
-    super(resourceUri);
+  constructor(public resourceUri: vscode.Uri, public searchContext: SearchContext) {
   }
 
   toTreeItem(): vscode.TreeItem {
@@ -20,9 +19,9 @@ export class SearchResultTreeItem extends vscode.TreeItem {
 export class SearchResult extends SearchResultTreeItem {
   constructor(
     uri: vscode.Uri,
-    public _searchContext: SearchContext
+    searchContext: SearchContext
   ) {
-    super(uri);
+    super(uri, searchContext);
   }
 
   toTreeItem(): vscode.TreeItem {
@@ -54,9 +53,9 @@ export class SearchResultItem extends SearchResultTreeItem {
   constructor(
     uri: vscode.Uri,
     public tag: QSNode,
-    public searchContext: SearchContext
+    searchContext: SearchContext
   ) {
-    super(uri);
+    super(uri, searchContext);
     const { startOffset, endOffset } = htmlUtil.getOffsetOfCloseTag(tag);
     this.startOffset = startOffset;
     this.endOffset = endOffset;

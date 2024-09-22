@@ -70,8 +70,8 @@ export class ReplaceEditMemFsTextDocument extends ReplaceEditTextDocument {
       document.lineAt(0).range.start,
       document.lineAt(document.lineCount - 1).range.end
     );
-    const rawText = await vscode.workspace.fs.readFile(vscode.Uri.from({scheme: uri.fragment, path: uri.path}));
-    edit.replace(document.uri, range, rawText.toString());
+    const rawText = await vscode.workspace.openTextDocument(vscode.Uri.from({scheme: uri.fragment, path: uri.path}));
+    edit.replace(document.uri, range, rawText.getText());
     await vscode.workspace.applyEdit(edit);
 
     return document;
