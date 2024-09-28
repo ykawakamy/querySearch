@@ -1,11 +1,15 @@
 {
   "description": "この拡張機能はCSSセレクタを使用しHTML/JSX/TSXファイルのタグを検索します。",
 
-  "QueryPanel": "検索条件入力パネル",
+  "QueryPanel": "querySearch",
   "SearchResult": "検索結果",
   "copyResult": "検索結果のコピー",
   "openFile": "ファイルを開く",
   "replace": "置換",
   "replaceAll": "すべて置換",
-  "replaceFiles": "全ファイル置換"
+  "replaceFiles": "全ファイル置換",
+
+  "expandRecursive": "再帰的に展開",
+  "collapseRecursive": "再帰的に折りたたむ",
+  "": ""
 }

@@ -12,7 +12,7 @@ const result = await esbuild.build({
   bundle: true,
   platform: "node",
   sourcemap: sourcemap,
-  external: ["vscode"],
+  external: ["vscode", "@vscode/l10n"],
   outfile: "dist/extension.js",
 });
 

@@ -5,7 +5,7 @@
 		"lib": [
 			"ES2023", "DOM"
 		],
-		"sourceMap": true,
+		"sourceMap": false,
 		"outDir": "out",
 		"rootDirs": ["./src", "./test"],
 		"strict": true,   /* enable all strict type-checking options */

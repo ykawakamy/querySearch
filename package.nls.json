@@ -1,11 +1,15 @@
 {
   "description": "This extension is search html file by `CSS Selector`.",
 
-  "QueryPanel": "QueryPanel",
+  "QueryPanel": "querySearch",
   "SearchResult": "SearchResult",
-  "copyResult": "copyResult",
-  "openFile": "openFile",
+  "copyResult": "copy result",
+  "openFile": "open file",
   "replace": "replace",
-  "replaceAll": "replaceAll",
-  "replaceFiles": "replaceFiles"
+  "replaceAll": "replace all",
+  "replaceFiles": "replace files", 
+
+  "expandRecursive": "expand recursively",
+  "collapseRecursive": "collapse recursively",
+  "": ""
 }

@@ -6,12 +6,19 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
- - [ ] add configuration.
-   - [ ] filtering file extensions and languageId.
  - [ ] improve replace feature.
    - [ ] add replace script editor.
 
-## [0.0.8] - 2024-05-29
+## [0.0.10] - 2024-09-28
+ - release version
+
+## [0.0.9] - 2024-09-28
+ - pre-release version.
+ - filtering file extensions and languageId.
+ - improved result UI(treeview on webview).
+ - fix incorrect result when unclosing tag.
+
+ ## [0.0.8] - 2024-05-29
  - fix to query panel is not displayed when non-Japanese language packs are enabled.
 
 ## [0.0.7] - 2024-05-29

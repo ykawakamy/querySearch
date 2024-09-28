@@ -77,7 +77,6 @@ export class SearchQueryPanelProvider implements vscode.WebviewViewProvider {
       throw new Error("failed to loadIconTheme.");
     }
     await this.treeviewProvider.attactWebview(webviewView);
-
     webviewView.webview.options = {
       // Allow scripts in the webview
       enableScripts: true,

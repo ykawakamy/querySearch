@@ -58,7 +58,17 @@ export function activate(context: vscode.ExtensionContext) {
         queryPanel.searchContext.replaceContext.replaceToggle
           ? queryPanel.openReplacePreview(item)
           : queryPanel.openResource(item)
-    )
+    ),
+    vscode.commands.registerCommand(
+      Constants.COMMAND_QUERYSEARCH_EXPAND_RECURSIVE,   
+      (item?: SearchResult | SearchResultItem) =>
+        resultPanel.expandTree(item, true)
+    ),
+    vscode.commands.registerCommand(
+      Constants.COMMAND_QUERYSEARCH_COLLAPSE_RECURSIVE,   
+      (item?: SearchResult | SearchResultItem) =>
+        resultPanel.expandTree(item, false)
+    ),
   );
 
   context.subscriptions.push(

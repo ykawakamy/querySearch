@@ -1,22 +1,17 @@
-import * as fs from "fs/promises";
 import ignore from "ignore";
-import * as path from "path";
-import { posix } from "path";
+import { minimatch } from "minimatch";
 import * as vscode from "vscode";
 import { Constants } from "../constants";
 import { ReplaceEditTextDocument } from "../engine/replace-edit";
-import { ReplaceContext, SearchContext } from "../model/search-context.model";
 import { SearchEngine } from "../engine/search-engine";
+import { ReplacedEvent } from "../model/replaced-event";
+import { SearchContext } from "../model/search-context.model";
 import {
   SearchResult,
   SearchResultItem,
   SearchResultTreeItem,
 } from "../model/search-result.model";
 import { ReplacePreviewDocumentProvider } from "./replace-preview";
-import { ReplacedEvent } from "../model/replaced-event";
-import _ from "lodash";
-import { minimatch } from "minimatch";
-import { act } from "react";
 
 type PathMatcher = (filePath: vscode.Uri, isFolder: boolean) => boolean;
 
@@ -86,7 +81,7 @@ export class SearchResultPanelProvider
     }
 
     const r = searchEngine.search(document.getText(), uri, this.latestSearchContext);
-    this.mergeResult(new ReplacedEvent(uri, index, r));
+    await this.mergeResult(new ReplacedEvent(uri, index, r));
     this._onDidChangeTreeData.fire(undefined);
   }
 
@@ -100,7 +95,7 @@ export class SearchResultPanelProvider
     return Promise.resolve(this._result);
   }
 
-  private mergeResult(replaceEvent: ReplacedEvent) {
+  private async mergeResult(replaceEvent: ReplacedEvent) {
     if (!replaceEvent.newResult) {
       this._result.splice(replaceEvent.index, 1);
       return;
@@ -127,12 +122,14 @@ export class SearchResultPanelProvider
     }
     recursive(oldRootItems, newRootItems);
     this._result[replaceEvent.index] = replaceEvent.newResult;
-    void this.previewProvider.refresh(
+    await this.previewProvider.refresh(
       replaceEvent.uri,
       change,
       this.latestSearchContext
     );
   }
+
+
 
   getTreeItem(offset: SearchResultTreeItem): vscode.TreeItem {
     return offset.toTreeItem();
@@ -350,14 +347,14 @@ export class SearchResultPanelProvider
     await this.replaceAll(searchResult);
   }
 
-  async replaceAll(searchResult: SearchResult) {
+  async replaceAll(searchResult: SearchResultTreeItem) {
     if (!searchResult) {
       return;
     }
     await this.replaceAllFiles([searchResult]);
   }
 
-  async replaceAllFiles(searchResults?: SearchResult[] | undefined) {
+  async replaceAllFiles(searchResults?: SearchResultTreeItem[] | undefined) {
     searchResults ??= this._result;
     const edit = new ReplaceEditTextDocument();
 
@@ -398,14 +395,26 @@ export class SearchResultPanelProvider
 
     return result;
   }
+
+  async expandTree(item: SearchResultTreeItem | undefined, isExpanded: boolean) {
+    const items = item ? [item] : this._result;
+    const recursive = (items: SearchResultTreeItem[] )=>{
+      for (const item of items) {
+        item.isExpanded = isExpanded;
+        recursive(item.items);
+      }
+    };
+    recursive(items);
+    this._onDidChangeTreeData.fire(undefined);
+  }
 }
 
 // TODO: vscode.workspace.openTextDocument was trigger code analyzer(e.g. ts language server)
 async function readFileToString(uri: vscode.Uri): Promise<string> {
-  try{
+  try {
     const bytes = await vscode.workspace.fs.readFile(uri);
-    return new TextDecoder(undefined, {fatal: true}).decode(bytes);
-  }catch(e){
+    return new TextDecoder(undefined, { fatal: true }).decode(bytes);
+  } catch (e) {
     // fallback
     const document = await vscode.workspace.openTextDocument(uri);
     return document.getText();

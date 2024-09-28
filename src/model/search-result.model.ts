@@ -14,6 +14,19 @@ export class SearchResultTreeItem {
   toTreeItem(): vscode.TreeItem {
     return {};
   }
+
+  findByIndex(index: number): SearchResultItem | undefined {
+    for (const item of this.items) {
+      if (item.index === index) {
+        return item;
+      }
+      const child = item.findByIndex(index);
+      if (child) {
+        return child;
+      }
+    }
+    return undefined;
+  }
 }
 
 export class SearchResult extends SearchResultTreeItem {
@@ -44,7 +57,7 @@ export class SearchResult extends SearchResultTreeItem {
 
 export class SearchResultItem extends SearchResultTreeItem {
   isCompleted = false;
-  index = 0;
+  index = -1;
   startOffset: number;
   endOffset: number;
   label: string;
@@ -74,7 +87,8 @@ export class SearchResultItem extends SearchResultTreeItem {
           : this.isExpanded
             ? vscode.TreeItemCollapsibleState.Expanded
             : vscode.TreeItemCollapsibleState.Collapsed,
-      contextValue: ContextValues.result,
+      contextValue: this.items.length === 0
+      ? ContextValues.result : ContextValues.resultItems,
       command: {
         command: Constants.COMMAND_QUERYSEARCH_PREVIEWFILE,
         title: vscode.l10n.t("Open File"),

@@ -19,6 +19,8 @@ export interface OpenedDiffContext {
   sourceUri: vscode.Uri;
   previewUri: vscode.Uri;
   searchItem: SearchResultTreeItem;
+  latestSelectIndex?: number | undefined;
+  isLock: boolean;
 }
 export class ReplacePreviewDocumentProvider
   implements TextDocumentContentProvider, Disposable {
@@ -44,9 +46,6 @@ export class ReplacePreviewDocumentProvider
         this.openedDiffs = this.openedDiffs.filter(x => {
           const preserve = x.sourceUri.toString() !== uri
             || x.previewUri.toString() !== uri;
-            if(!preserve){
-              console.log("close %s", x.previewUri.toString());
-            }
           return preserve;
         });
       }),
@@ -78,7 +77,10 @@ export class ReplacePreviewDocumentProvider
     if (token.isCancellationRequested) {
       return "Canceled";
     }
-
+    const context = this.openedDiffs.find(x => x.previewUri.toString() === previewUri.toString());
+    if (!context) {
+      return "";
+    }
     try {
       const searchContext: SearchContext = JSON.parse(previewUri.query).context;
       const searchEngine = this.searchEngines.find((v) => v.canApply(previewUri));
@@ -87,13 +89,9 @@ export class ReplacePreviewDocumentProvider
         return vscode.l10n.t("can not found appliable engine.");
       }
 
-      const context = this.openedDiffs.find(x => x.previewUri.toString() === previewUri.toString());
-      if (!context) {
-        return "";
-      }
       const searchResult = context.searchItem instanceof SearchResultItem
-          ? context.searchItem.parent
-          : context.searchItem;
+        ? context.searchItem.parent
+        : context.searchItem;
       if (!searchResult) {
         return vscode.l10n.t("not found result.");;
       }
@@ -105,6 +103,12 @@ export class ReplacePreviewDocumentProvider
       await edit.applyEdit();
       return text.getText();
     } catch (e) {
+      console.log(e);
+      if (token.isCancellationRequested) {
+        return "Canceled";
+      }
+    } finally {
+      context.isLock = false;
     }
     return "";
   }
@@ -113,7 +117,7 @@ export class ReplacePreviewDocumentProvider
     item: SearchResult | SearchResultItem,
     searchContext: SearchContext
   ) {
-    const previewUri = getPreviewUri(item.resourceUri, searchContext, item);
+    const previewUri = getPreviewUri(item.resourceUri, searchContext);
     const document = await vscode.workspace.openTextDocument(item.resourceUri);
     const range = item instanceof SearchResultItem ? item.getRange(document) : undefined;
     const options: vscode.TextDocumentShowOptions = {
@@ -126,12 +130,15 @@ export class ReplacePreviewDocumentProvider
     const context = this.openedDiffs.find(x => x.previewUri.toString() === previewUri.toString());
     if (context) {
       context.searchItem = item;
+      context.latestSelectIndex = item instanceof SearchResultItem ? item.index : undefined;
       this._onDidChange.fire(context.previewUri);
-    }else{
+    } else {
       this.openedDiffs.push({
         searchItem: item,
         previewUri: previewUri,
         sourceUri: item.resourceUri,
+        latestSelectIndex: item instanceof SearchResultItem ? item.index : undefined,
+        isLock: false,
       });
     }
 
@@ -145,12 +152,18 @@ export class ReplacePreviewDocumentProvider
   }
 
   async refresh(resourceUri: vscode.Uri, item: SearchResultTreeItem, searchContext: SearchContext) {
-    const preview = getPreviewUri(item.resourceUri, searchContext, item);
+    const preview = getPreviewUri(item.resourceUri, searchContext);
     const context = this.openedDiffs.find(x => x.previewUri.toString() === preview.toString());
-    if (context) {
+    if (context && !context.isLock) {
+      context.isLock = true;
+      if (context.latestSelectIndex !== undefined) {
+        const child = item.findByIndex(context.latestSelectIndex ?? -1);
+        if (child) {
+          item = child;
+        }
+      }
       context.searchItem = item;
       this._onDidChange.fire(context.previewUri);
-      console.log("refresh %s", resourceUri.toString() );
     }
   }
 }
@@ -158,7 +171,6 @@ export class ReplacePreviewDocumentProvider
 function getPreviewUri(
   resource: vscode.Uri,
   searchContext: SearchContext,
-  item?: SearchResultTreeItem
 ) {
   return vscode.Uri.from({
     scheme: Constants.SCHEMA_PREVIEW,

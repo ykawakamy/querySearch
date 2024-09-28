@@ -2,7 +2,7 @@
   "name": "querysearch",
   "displayName": "querySearch",
   "description": "%description%",
-  "version": "0.0.8",
+  "version": "0.0.10",
   "engines": {
     "vscode": "^1.92.0"
   },
@@ -60,6 +60,16 @@
         "title": "%copyResult%"
       },
       {
+        "command": "querySearch.expandRecursive",
+        "title": "%expandRecursive%",
+        "icon": "$(expand-all)"
+      },
+      {
+        "command": "querySearch.collapseRecursive",
+        "title": "%collapseRecursive%",
+        "icon": "$(expand-all)"
+      },
+      {
         "command": "treeviewWrap:querySearch.copyResult",
         "title": "%copyResult%"
       }
@@ -68,22 +78,22 @@
       "view/item/context": [
         {
           "command": "querySearch.openFile",
-          "when": "view == searchResult && viewItem == querySearch.result && querysearch.replaceMode == true",
+          "when": "view == searchResult && querysearch.replaceMode == true",
           "group": "inline"
         },
         {
           "command": "querySearch.replace",
-          "when": "view == searchResult && viewItem == querySearch.result && querysearch.replaceMode == true",
-          "group": "inline"
-        },
-        {
-          "command": "querySearch.openFile",
-          "when": "view == searchResult && viewItem == querySearch.file && querysearch.replaceMode == true",
+          "when": "view == searchResult && (viewItem == querySearch.result || viewItem == querySearch.resultItems ) && querysearch.replaceMode == true",
           "group": "inline"
         },
         {
           "command": "querySearch.replaceAll",
-          "when": "view == searchResult && viewItem == querySearch.file && querysearch.replaceMode == true",
+          "when": "view == searchResult && (viewItem == querySearch.file || viewItem == querySearch.resultItems ) && querysearch.replaceMode == true",
+          "group": "inline"
+        },
+        {
+          "command": "querySearch.expandRecursive",
+          "when": "view == searchResult && (viewItem == querySearch.file || viewItem == querySearch.resultItems ) ",
           "group": "inline"
         },
         {
