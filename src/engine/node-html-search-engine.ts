@@ -10,7 +10,7 @@ import { SearchContext } from "../model/search-context.model";
 import { SearchEngine } from "./search-engine";
 import { QSNode } from "../model/qs-node.model";
 
-export class NodeHtmlParserAdaptor extends SearchEngine {
+export class NodeHtmlSearchEngine extends SearchEngine {
   suffixes = [".html", ".htm"]; 
 
   canApply( uri: vscode.Uri){

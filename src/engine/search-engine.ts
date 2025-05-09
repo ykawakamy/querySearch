@@ -1,5 +1,5 @@
 import * as vm from "vm";
-import * as vscode from "vscode";
+import vscode from "vscode";
 import { SearchResult, SearchResultItem, SearchResultTreeItem } from "../model/search-result.model";
 import {
   ReplaceEdit

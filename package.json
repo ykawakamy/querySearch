@@ -125,14 +125,15 @@
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node --enable-source-maps ./out/test/runTest.js",
+    "test": "jest",
     "l10n:generate": "npx @vscode/l10n-dev export --outDir ./l10n ./src"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
+    "@types/jest": "^29.5.14",
     "@types/lodash": "^4.17.7",
     "@types/minimatch": "^5.1.2",
-    "@types/mocha": "^10.0.7",
+    "@types/mocha": "^10.0.10",
     "@types/node": "~20.16.1",
     "@types/react": "^18.3.4",
     "@types/react-dom": "^18.3.0",
@@ -149,7 +150,9 @@
     "eslint": "^8.57.0",
     "glob": "^10.4.5",
     "mocha": "^10.7.3",
+    "ts-jest": "^29.2.6",
     "ts-loader": "^9.5.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.5.4"
   },
   "dependencies": {

@@ -5,9 +5,9 @@
 		"lib": [
 			"ES2023", "DOM"
 		],
-		"sourceMap": false,
+		"sourceMap": true,
 		"outDir": "out",
-		"rootDirs": ["./src", "./test"],
+		"rootDirs": ["./src"],
 		"strict": true,   /* enable all strict type-checking options */
 
     // "declaration": true,                   /* Generates corresponding '.d.ts' file. */

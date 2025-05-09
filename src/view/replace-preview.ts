@@ -120,11 +120,7 @@ export class ReplacePreviewDocumentProvider
     const previewUri = getPreviewUri(item.resourceUri, searchContext);
     const document = await vscode.workspace.openTextDocument(item.resourceUri);
     const range = item instanceof SearchResultItem ? item.getRange(document) : undefined;
-    const options: vscode.TextDocumentShowOptions = {
-      selection: range,
-      preserveFocus: true,
-      preview: true,
-    };
+
     const basefile = path.basename(item.resourceUri.fsPath);
 
     const context = this.openedDiffs.find(x => x.previewUri.toString() === previewUri.toString());
@@ -141,6 +137,12 @@ export class ReplacePreviewDocumentProvider
         isLock: false,
       });
     }
+    
+    const options: vscode.TextDocumentShowOptions = {
+      selection: range,
+      preserveFocus: true,
+      preview: true,
+    };
 
     await vscode.commands.executeCommand(
       "vscode.diff",

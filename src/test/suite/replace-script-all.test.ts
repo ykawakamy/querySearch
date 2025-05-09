@@ -3,7 +3,7 @@ import { after } from "mocha";
 
 import * as vscode from "vscode";
 import { SearchResultPanelProvider } from "../../view/search-result-panel";
-import { NodeHtmlParserAdaptor } from "../../engine/node-html-parser";
+import { NodeHtmlSearchEngine } from "../../engine/node-html-search-engine";
 import { ReplacePreviewDocumentProvider } from "../../view/replace-preview";
 import { Tempfile } from "./tempFileUtil";
 import { defaultSearchContext } from "../../model/search-context.model";
@@ -11,7 +11,7 @@ import { defaultSearchContext } from "../../model/search-context.model";
 suite("ReplaceAll Script Test", () => {
   let testee = new SearchResultPanelProvider(
     new ReplacePreviewDocumentProvider(),
-    new (class extends NodeHtmlParserAdaptor {
+    new (class extends NodeHtmlSearchEngine {
       canApply(uri: vscode.Uri): boolean {
         return true;
       }
@@ -39,7 +39,7 @@ suite("ReplaceAll Script Test", () => {
         replaceToggle: false,
       },
     };
-    const result = new NodeHtmlParserAdaptor().search(document.getText(), document.uri, searchContext);
+    const result = new NodeHtmlSearchEngine().search(document.getText(), document.uri, searchContext);
     testee.latestSearchContext = searchContext;
     await testee.replaceAll(result!);
     assert.equal(document.getText(), expected);
@@ -98,7 +98,7 @@ suite("ReplaceAll Script Test", () => {
   });
 
   // XXX closing/empty tag
-  test.skip("remove and insert to AfterEnd, preserve closing/empty tag", async () => {
+  test.skip("remove and insert to AfterEnd, preserve closing/empty tag2", async () => {
     const document = await tempfile.createDocument({
       content: `
     <ul>

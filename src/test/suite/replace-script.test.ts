@@ -1,8 +1,8 @@
 import assert = require("assert");
-import { after } from "mocha";
+import { after, suiteTeardown } from "mocha";
 
 import * as vscode from "vscode";
-import { NodeHtmlParserAdaptor } from "../../engine/node-html-parser";
+import { NodeHtmlSearchEngine } from "../../engine/node-html-search-engine";
 import { SearchResultPanelProvider } from "../../view/search-result-panel";
 import { ReplacePreviewDocumentProvider } from "../../view/replace-preview";
 import { Tempfile } from "./tempFileUtil";
@@ -11,7 +11,7 @@ import { defaultSearchContext } from "../../model/search-context.model";
 suite("Replace Script Test", () => {
   let testee = new SearchResultPanelProvider(
     new ReplacePreviewDocumentProvider(),
-    new (class extends NodeHtmlParserAdaptor {
+    new (class extends NodeHtmlSearchEngine {
       canApply(uri: vscode.Uri): boolean {
         return true;
       }
@@ -19,7 +19,10 @@ suite("Replace Script Test", () => {
   );
 
   let tempfile = new Tempfile();
-  suiteSetup(async () => {});
+  suiteSetup(async () => { });
+  suiteTeardown(async () => {
+    tempfile.cleanup();
+  });
 
   async function assertReplace(
     document: vscode.TextDocument,
@@ -35,7 +38,7 @@ suite("Replace Script Test", () => {
         replaceToggle: false,
       },
     };
-    const result = new NodeHtmlParserAdaptor().search(document.getText(), document.uri, searchContext);
+    const result = new NodeHtmlSearchEngine().search(document.getText(), document.uri, searchContext);
     testee.latestSearchContext = searchContext;
     await testee.replace(result!.items[0]);
     assert.equal(document.getText(), expected);
@@ -90,7 +93,7 @@ suite("Replace Script Test", () => {
   });
 
   // TODO self closing/empty tag become decomposite by parser.
-  test.skip("XXX remove and insert to AfterEnd, preserve closing/empty tag", async () => {
+  test("XXX remove and insert to AfterEnd, preserve closing/empty tag", async () => {
     const document = await tempfile.createDocument({
       content: `
     <ul>
@@ -222,7 +225,7 @@ suite("Replace Script Test", () => {
     await assertReplace(document, searchContext, replaceExpr, expected);
   });
 
-  test("preserve multiline attribute", async () => {
+  test("preserve multiline attribute2", async () => {
     const document = await tempfile.createDocument({
       content: `
     <ul onclick='

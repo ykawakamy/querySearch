@@ -2,16 +2,16 @@ import * as vscode from "vscode";
 import { SearchQueryPanelProvider } from "./view/search-query-panel";
 import { SearchResultPanelProvider } from "./view/search-result-panel";
 import { ReplacePreviewDocumentProvider } from "./view/replace-preview";
-import { NodeHtmlParserAdaptor } from "./engine/node-html-parser";
-import { JsxHtmlParserAdapter } from "./engine/jsx-htmlnode-parser";
+import { NodeHtmlSearchEngine } from "./engine/node-html-search-engine";
+import { JsxSearchEngine } from "./engine/jsx-search-engine";
 import { TreeviewOnWebviewProvider } from "treeview-on-vscode-webview/dist/TreeviewOnWebviewProvider";
 import { Constants } from "./constants";
 import { SearchResult, SearchResultItem } from "./model/search-result.model";
 
 export function activate(context: vscode.ExtensionContext) {
   const searchEngines = [
-    new NodeHtmlParserAdaptor(),
-    new JsxHtmlParserAdapter(),
+    new NodeHtmlSearchEngine(),
+    new JsxSearchEngine(),
   ];
   const previewProvider = new ReplacePreviewDocumentProvider(...searchEngines);
   const resultPanel = new SearchResultPanelProvider(previewProvider, ...searchEngines);
@@ -21,6 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
   const queryPanel = new SearchQueryPanelProvider(context, resultPanel, treeProvider, previewProvider);
 
   context.subscriptions.push(
+    previewProvider,
     vscode.commands.registerCommand(
       Constants.COMMAND_QUERYSEARCH_REPLACE,
       async (result: SearchResultItem) => {
@@ -60,12 +61,12 @@ export function activate(context: vscode.ExtensionContext) {
           : queryPanel.openResource(item)
     ),
     vscode.commands.registerCommand(
-      Constants.COMMAND_QUERYSEARCH_EXPAND_RECURSIVE,   
+      Constants.COMMAND_QUERYSEARCH_EXPAND_RECURSIVE,
       (item?: SearchResult | SearchResultItem) =>
         resultPanel.expandTree(item, true)
     ),
     vscode.commands.registerCommand(
-      Constants.COMMAND_QUERYSEARCH_COLLAPSE_RECURSIVE,   
+      Constants.COMMAND_QUERYSEARCH_COLLAPSE_RECURSIVE,
       (item?: SearchResult | SearchResultItem) =>
         resultPanel.expandTree(item, false)
     ),

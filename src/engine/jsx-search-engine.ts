@@ -9,14 +9,14 @@ import { PHtmlRawAttributes } from "html-parser/dist/model/PHtmlAttributes";
 import { PHtmlDocument } from "html-parser/dist/model/PHtmlDocument";
 import { PHtmlElement } from "html-parser/dist/model/PHtmlElement";
 import { PHtmlNode } from "html-parser/dist/model/PHtmlNode";
-import * as ts from "typescript";
+import ts from "typescript";
 import * as vscode from "vscode";
 import { htmlUtil } from "../util/html-util";
 import { SearchContext } from "../model/search-context.model";
 import { SearchEngine } from "./search-engine";
 
 type TNode = IPHtmlElement | IPHtmlNode | IPHtmlDocument;
-export class JsxHtmlParserAdapter extends SearchEngine {
+export class JsxSearchEngine extends SearchEngine {
   suffixes = [".tsx", ".jsx", ".ts", ".js", ".mjs", ".cjs"];
 
   canApply(uri: vscode.Uri) {
@@ -72,7 +72,8 @@ export class JsxHtmlParserAdapter extends SearchEngine {
           }
           const html = (sourceFile).getFullText().slice(commentRange.pos, commentRange.end);
           const maybeHtml = parser.parse(html, { offset: commentRange.pos })!;
-          maybeHtml.childNodes.forEach(node => parent.appendChild(node));
+          parent.childNodes.push(...maybeHtml.childNodes);
+          parent.childNodes.forEach(node => node.setParent(parent));;
           lastPos = commentRange.end;
         }
         if (lastPos < end) {
@@ -81,7 +82,7 @@ export class JsxHtmlParserAdapter extends SearchEngine {
         }
       }
     };
-    const createHtmlNode = (tagName: string, attributes: ts.JsxAttributes, isSelfClosing: boolean, tsNode: ts.Node, htmlNode: IPHtmlNode): PHtmlElement => {
+    const createHtmlNode = (tagName: string, attributes: ts.JsxAttributes, isSelfClosing: boolean, tsNode: ts.Node, htmlNode: PHtmlNode): PHtmlElement => {
       const range = {
         startOpenTag: tsNode.pos,
         endOpenTag: tsNode.end,
@@ -113,7 +114,7 @@ export class JsxHtmlParserAdapter extends SearchEngine {
       const node = new PHtmlElement(tagName, htmlNode, attr, isSelfClosing, trail, parser, range);
       return node;
     };
-    const createNode = (content: string, start: number, end: number, htmlNode: IPHtmlNode) => {
+    const createNode = (content: string, start: number, end: number, htmlNode: PHtmlNode) => {
       const raw = content.substring(start, end);
       const range = {
         startOpenTag: start,
@@ -126,17 +127,26 @@ export class JsxHtmlParserAdapter extends SearchEngine {
     };
     const traversal = (parent: PHtmlElement, tsNode: ts.Node, pos = 0) => {
       tsNode.forEachChild((node) => {
+        const comments = ts.getLeadingCommentRanges(sourceContent, node.pos);
         // console.log("%s %d %d %d - [%s] %s", "  ".repeat(pos),  node.pos, node.end, lastPos, sourceContent.slice(node.pos, node.end), ts.SyntaxKind[node.kind] );
 
+        // if ( comments ) {
+        //   for (const commentRange of comments) {
+        //     const comment = sourceContent.slice(commentRange.pos, commentRange.end);
+        //     const maybeHtml = parser.parse(comment, { offset: commentRange.pos })!;
+        //     parent.childNodes.push(...maybeHtml.childNodes);
+        //     parent.childNodes.forEach(node => node.setParent(parent));
+        //     lastPos = commentRange.end;
+        //   }
+        // }
+        flush(parent, node.pos);
         if (ts.isJsxOpeningElement(node)) {
-          flush(parent, node.pos);
           const child = createHtmlNode(node.tagName.getText(sourceFile), node.attributes, false, node, parent);
           parent.appendChild(child);
           stack.push(child);
           parent = child;
           lastPos = node.end;
         } else if (ts.isJsxClosingElement(node)) {
-          flush(parent, node.pos);
           parent._rawCloseTag = node.getText(sourceFile);
           parent.range!.startCloseTag = node.pos;
           parent.range!.endCloseTag = node.end;
@@ -144,18 +154,15 @@ export class JsxHtmlParserAdapter extends SearchEngine {
           parent = stack.pop()!;
           lastPos = node.end;
         } else if (ts.isJsxSelfClosingElement(node)) {
-          flush(parent, node.pos);
           const child = createHtmlNode(node.tagName.getText(sourceFile), node.attributes, true, node, parent);
           parent.appendChild(child);
           lastPos = node.end;
         } else if (ts.isStringLiteralLike(node) || ts.isJSDoc(node) || ts.isTemplateExpression(node)) {
-          flush(parent, node.pos);
           const maybeHtml = parser.parse(node.getFullText(sourceFile), { offset: node.pos })!;
-          parent.childNodes.push(...maybeHtml.childNodes);
-          parent.childNodes.forEach(node => node.setParent(parent));
+          parent.replaceChildren(...maybeHtml.childNodes);
           lastPos = node.end;
         } else if (node.kind === ts.SyntaxKind.EndOfFileToken) {
-          flush(parent, node.pos);
+          flush(parent, node.end);
         } else {
           traversal(parent, node, pos + 1);
         }
